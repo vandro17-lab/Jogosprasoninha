@@ -112,6 +112,16 @@ export default function Home() {
         <p className="text-text-muted text-xs text-center">
           Suas lembranças ficarão guardadas com muito carinho 🤍
         </p>
+
+        <div
+          className="w-full rounded-2xl px-5 py-3 flex items-center gap-3"
+          style={{ background: '#FFF8E7', border: '1px dashed #C9A84C' }}
+        >
+          <span className="text-xl shrink-0">🤫</span>
+          <p className="text-xs text-text-muted leading-relaxed">
+            <strong className="text-text-dark">É surpresa!</strong> Por favor, não comente nada com a Sônia antes do aniversário 🤍
+          </p>
+        </div>
       </div>
     </main>
   )
