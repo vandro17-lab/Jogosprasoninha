@@ -6,30 +6,55 @@ import { useState } from 'react'
 
 export default function Home() {
   const [imgError, setImgError] = useState(false)
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
-      {/* Fundo suave */}
+      {/* Fundo suave com confetes fixos */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at top, #F0E8D8 0%, #FAF7F2 60%)',
-        }}
+        style={{ background: 'radial-gradient(ellipse at top, #F0E8D8 0%, #FAF7F2 65%)' }}
       />
 
-      <div className="relative z-10 max-w-sm w-full flex flex-col items-center gap-8 animate-fade-in">
+      {/* Decorações de fundo */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden>
+        <span className="absolute top-8 left-6 text-3xl opacity-20" style={{ transform: 'rotate(-15deg)' }}>🌸</span>
+        <span className="absolute top-16 right-8 text-2xl opacity-20" style={{ transform: 'rotate(12deg)' }}>✨</span>
+        <span className="absolute top-32 left-12 text-xl opacity-15">🎀</span>
+        <span className="absolute bottom-24 left-8 text-2xl opacity-20" style={{ transform: 'rotate(-8deg)' }}>🌸</span>
+        <span className="absolute bottom-16 right-10 text-3xl opacity-20" style={{ transform: 'rotate(20deg)' }}>✨</span>
+        <span className="absolute top-1/2 right-4 text-xl opacity-15">🎂</span>
+      </div>
+
+      <div className="relative z-10 max-w-sm w-full flex flex-col items-center gap-7 animate-fade-in">
+
+        {/* Badge de aniversário */}
+        <div
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, #C9A84C22 0%, #E8D5A344 100%)', border: '1px solid #C9A84C55', color: '#A07830' }}
+        >
+          <span>🎂</span>
+          <span>59 anos da Sônia</span>
+          <span>🎂</span>
+        </div>
+
         {/* Foto da Sônia */}
         <div className="relative">
+          {/* Anel dourado decorativo externo */}
           <div
-            className="w-40 h-40 rounded-full overflow-hidden shadow-xl border-4 border-white flex items-center justify-center"
-            style={{ boxShadow: '0 8px 32px rgba(201,168,76,0.25)', background: '#F0E8D8' }}
+            className="absolute -inset-2 rounded-full opacity-40"
+            style={{ background: 'conic-gradient(from 0deg, #C9A84C, #E8D5A3, #C9A84C, #A07830, #C9A84C)' }}
+          />
+          <div
+            className="relative w-44 h-44 rounded-full overflow-hidden shadow-xl border-4 border-white flex items-center justify-center"
+            style={{ boxShadow: '0 8px 32px rgba(201,168,76,0.3)', background: '#F0E8D8' }}
           >
             {!imgError ? (
               <Image
                 src="/sonia.jpg"
                 alt="Foto da Sônia"
-                width={160}
-                height={160}
-                className="w-full h-full object-cover"
+                width={176}
+                height={176}
+                className="w-full h-full object-cover object-top"
                 priority
                 onError={() => setImgError(true)}
               />
@@ -37,35 +62,38 @@ export default function Home() {
               <span className="font-playfair text-5xl text-gold">S</span>
             )}
           </div>
-          <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gold rounded-full flex items-center justify-center shadow">
-            <span className="text-white text-sm">🤍</span>
+          <div
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium text-white shadow-md whitespace-nowrap"
+            style={{ background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)' }}
+          >
+            🥳 Feliz Aniversário!
           </div>
         </div>
 
         {/* Título */}
-        <div className="text-center">
-          <p className="font-playfair text-xl text-text-dark leading-relaxed mb-1">
+        <div className="text-center mt-2">
+          <p className="font-playfair text-2xl text-text-dark leading-snug">
             Uma surpresa especial
           </p>
-          <p className="text-text-muted text-sm">para a Sônia</p>
+          <p className="text-gold font-playfair text-lg mt-1">para a Sônia 🌸</p>
         </div>
 
         {/* Texto principal */}
         <div
-          className="w-full rounded-2xl p-6 text-center"
-          style={{ background: 'rgba(255,253,249,0.85)', backdropFilter: 'blur(8px)', border: '1px solid #E8D5A3' }}
+          className="w-full rounded-3xl p-6 text-center"
+          style={{ background: 'rgba(255,253,249,0.9)', backdropFilter: 'blur(8px)', border: '1px solid #E8D5A3', boxShadow: '0 4px 24px rgba(201,168,76,0.08)' }}
         >
           <p className="text-text-dark leading-relaxed text-base">
-            Estamos preparando uma surpresa muito especial para a Sônia 😊
+            Estamos preparando uma surpresa muito especial para os <strong>59 anos da Sônia</strong> 😊
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
             Queremos guardar lembranças, histórias e momentos importantes de pessoas que fizeram parte da vida dela.
           </p>
-          <p className="text-text-muted text-sm mt-4">
-            Vai ser rapidinho.
-          </p>
-          <p className="text-text-dark leading-relaxed text-base mt-2">
-            Você só precisa falar do seu jeito. Depois o sistema organiza tudo para você.
+          <div className="flex justify-center gap-2 my-4 text-xl">
+            <span>🌸</span><span>🎂</span><span>🌸</span>
+          </div>
+          <p className="text-text-muted text-sm">
+            Vai ser rapidinho. Você só precisa falar do seu jeito — depois o sistema organiza tudo para você.
           </p>
         </div>
 
@@ -75,10 +103,10 @@ export default function Home() {
           className="w-full py-4 rounded-2xl text-center font-medium text-white text-lg transition-all duration-200 active:scale-98 shadow-lg"
           style={{
             background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
-            boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
+            boxShadow: '0 4px 20px rgba(201,168,76,0.4)',
           }}
         >
-          Começar
+          Participar da surpresa 🎉
         </Link>
 
         <p className="text-text-muted text-xs text-center">
