@@ -1,21 +1,21 @@
-const FREE_MODEL = 'google/gemini-2.0-flash-exp:free'
-const QUALITY_MODEL = 'google/gemini-2.5-flash-lite'
+export type QuickResult = { isQuestion: boolean; text: string }
 
-const SYSTEM_PROMPT = `Você é um assistente criado EXCLUSIVAMENTE para guardar lembranças da Sônia para o aniversário dela.
+const QUICK_MODEL = 'google/gemini-2.0-flash-exp:free'
+const FALLBACK_MODEL = 'openrouter/free'
+const FINAL_MODEL = 'google/gemini-2.5-flash-lite'
+
+const SYSTEM_PROMPT = `Você é um assistente criado EXCLUSIVAMENTE para guardar lembranças da Sônia para o aniversário de 59 anos dela.
 
 Regras absolutas:
-- Mantenha foco total na Sônia. Se a pessoa sair do assunto, responda APENAS: "Desculpe 😊 Fui criado apenas para guardar lembranças da Sônia."
+- Foco total na Sônia. Se a pessoa sair do assunto, responda APENAS: "Desculpe 😊 Fui criado apenas para guardar lembranças da Sônia."
 - Nunca invente fatos ou detalhes que a pessoa não mencionou
 - Nunca faça múltiplas perguntas de uma vez
-- Nunca dê conselhos, filosofe ou aprofunde demais
-- Suas respostas devem ser curtas, calorosas e naturais
+- Respostas curtas, calorosas e naturais
 - Nunca insista para a pessoa falar mais`
 
-async function callOpenRouter(model: string, messages: { role: string; content: string }[]) {
+async function callOpenRouter(model: string, messages: { role: string; content: string }[], maxTokens = 300): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY não configurada')
-  }
+  if (!apiKey) throw new Error('OPENROUTER_API_KEY não configurada')
 
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -23,64 +23,88 @@ async function callOpenRouter(model: string, messages: { role: string; content: 
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://memorias-da-sonia.vercel.app',
-      'X-Title': 'Banco de Memórias da Sônia',
+      'X-Title': 'Memórias da Sônia',
     },
     body: JSON.stringify({
       model,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages,
-      ],
-      max_tokens: 300,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      max_tokens: maxTokens,
       temperature: 0.7,
     }),
   })
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`OpenRouter error: ${err}`)
+    throw new Error(`OpenRouter ${model} error ${res.status}: ${err}`)
   }
 
   const data = await res.json()
   return data.choices?.[0]?.message?.content ?? ''
 }
 
-export async function quickResponse(transcript: string): Promise<string> {
-  const messages = [
-    {
-      role: 'user',
-      content: `A pessoa acabou de falar esta lembrança sobre a Sônia:\n\n"${transcript}"\n\nResponda de forma curta, calorosa e natural (máximo 2 frases). Depois diga que ela pode contar mais uma lembrança ou finalizar.`,
-    },
-  ]
+export async function quickResponse(transcript: string, nome: string): Promise<QuickResult> {
+  const prompt = `${nome} compartilhou esta lembrança da Sônia:
+"${transcript}"
 
-  try {
-    return await callOpenRouter(FREE_MODEL, messages)
-  } catch {
-    return 'Que lembrança bonita 😊\n\nSe quiser, pode contar mais uma lembrança. Ou pode tocar em finalizar quando estiver pronta.'
+Analise a lembrança:
+- Se está suficientemente clara → responda com 1-2 frases carinhosas reconhecendo o que foi dito. Não invente nada.
+- Se está muito vaga ou incompleta para virar uma mensagem bonita → faça UMA pergunta gentil e específica.
+
+Responda APENAS com JSON válido, sem markdown:
+{"isQuestion": false, "text": "frase carinhosa"}
+ou
+{"isQuestion": true, "text": "pergunta gentil"}`
+
+  const messages = [{ role: 'user', content: prompt }]
+
+  // Tenta modelo gratuito, com fallback para openrouter/free
+  for (const model of [QUICK_MODEL, FALLBACK_MODEL]) {
+    try {
+      const raw = await callOpenRouter(model, messages, 150)
+      const match = raw.match(/\{[\s\S]*?"isQuestion"[\s\S]*?\}/)
+      if (match) {
+        const parsed = JSON.parse(match[0])
+        if (typeof parsed.isQuestion === 'boolean' && typeof parsed.text === 'string') {
+          return parsed
+        }
+      }
+      // Se não veio JSON, trata como resposta simples
+      if (raw.trim()) return { isQuestion: false, text: raw.trim() }
+    } catch (err) {
+      console.error(`quickResponse ${model} falhou:`, err)
+    }
   }
+
+  return { isQuestion: false, text: 'Que lembrança bonita 😊\n\nPode contar mais uma ou tocar em finalizar.' }
 }
 
-export async function generateFinalMessage(
-  memories: string[],
-  nome: string,
-  parentesco: string
-): Promise<string> {
-  const memoriesText = memories.map((m, i) => `${i + 1}. ${m}`).join('\n')
+export async function generateFinalMessage(memories: string[], nome: string, parentesco: string): Promise<string> {
+  const valid = memories.filter((m) => !m.startsWith('[Áudio'))
+  if (!valid.length) {
+    return `Querida Sônia,\n\nFeliz aniversário com muito carinho!\n\nCom amor, ${nome}`
+  }
+
+  const memoriesText = valid.map((m, i) => `${i + 1}. ${m}`).join('\n')
 
   const messages = [
     {
       role: 'user',
-      content: `${nome} (${parentesco} da Sônia) compartilhou estas lembranças:\n\n${memoriesText}\n\nCrie uma mensagem para a Sônia que:
-- Esteja em primeira pessoa (como se ${nome} tivesse escrito)
-- Seja natural e preserve o jeito dela falar
-- Seja calorosa e emotiva sem exagerar
-- Não invente fatos que não foram mencionados
-- Tenha entre 3 e 5 parágrafos curtos
-- Comece com "Sônia," ou "Querida Sônia,"
+      content: `${nome} (${parentesco || 'familiar'} da Sônia) compartilhou estas lembranças reais:
 
-Retorne APENAS a mensagem, sem introduções ou explicações.`,
+${memoriesText}
+
+Escreva uma mensagem de aniversário para a Sônia que:
+- Use SOMENTE os fatos das lembranças acima. Não invente nada.
+- Esteja em primeira pessoa (como se ${nome} tivesse escrito)
+- Preserve o jeito simples e carinhoso de falar
+- Tenha entre 3 e 5 parágrafos curtos
+- Comece com "Querida Sônia," ou "Sônia,"
+- Termine com "Com amor, ${nome}"
+
+Retorne APENAS a mensagem, sem explicações.`,
     },
   ]
 
-  return await callOpenRouter(QUALITY_MODEL, messages)
+  // Mensagem final usa modelo pago (mais qualidade, custo mínimo)
+  return callOpenRouter(FINAL_MODEL, messages, 450)
 }

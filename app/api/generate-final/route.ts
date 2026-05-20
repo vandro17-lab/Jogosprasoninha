@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { quickResponse, generateFinalMessage } from '@/lib/gemini'
+import { quickResponse, generateFinalMessage } from '@/lib/openrouter'
 import { getServiceClient, isMockMode } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
   if (body.action === 'quick') {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.OPENROUTER_API_KEY) {
       return NextResponse.json({
         isQuestion: false,
         response: 'Que lembrança bonita 😊\n\nPode contar mais uma ou tocar em finalizar.',
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === 'final') {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.OPENROUTER_API_KEY) {
       const mock = `Querida Sônia,\n\nTenho tantas lembranças bonitas de você. Obrigada por tudo.\n\nCom amor, ${body.nome}`
       return NextResponse.json({ mensagemFinal: mock })
     }
