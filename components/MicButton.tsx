@@ -1,5 +1,8 @@
 'use client'
 
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mic2, Square } from 'lucide-react'
+
 interface MicButtonProps {
   recording: boolean
   onClick: () => void
@@ -9,35 +12,91 @@ interface MicButtonProps {
 export default function MicButton({ recording, onClick, disabled }: MicButtonProps) {
   return (
     <div className="relative flex items-center justify-center">
-      {recording && (
-        <>
-          <div className="absolute w-32 h-32 rounded-full bg-gold/20 animate-pulse-ring" />
-          <div className="absolute w-24 h-24 rounded-full bg-gold/15 animate-pulse-ring" style={{ animationDelay: '0.4s' }} />
-        </>
-      )}
-      <button
+      {/* Expanding rings when recording */}
+      <AnimatePresence>
+        {recording && (
+          <>
+            <motion.div
+              key="ring1"
+              initial={{ scale: 1, opacity: 0.7 }}
+              animate={{ scale: 2.2, opacity: 0 }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
+              style={{
+                position: 'absolute',
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(200, 76, 76, 0.25)',
+              }}
+            />
+            <motion.div
+              key="ring2"
+              initial={{ scale: 1, opacity: 0.5 }}
+              animate={{ scale: 1.8, opacity: 0 }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
+              style={{
+                position: 'absolute',
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(200, 76, 76, 0.20)',
+              }}
+            />
+          </>
+        )}
+      </AnimatePresence>
+
+      <motion.button
         onClick={onClick}
         disabled={disabled}
-        className={`
-          relative z-10 w-20 h-20 rounded-full flex items-center justify-center
-          transition-all duration-300 shadow-lg active:scale-95
-          ${recording
-            ? 'bg-red-400 hover:bg-red-500 shadow-red-200'
-            : 'bg-gold hover:bg-gold-dark shadow-gold/30'
-          }
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        `}
+        whileHover={disabled ? {} : { scale: 1.06 }}
+        whileTap={disabled ? {} : { scale: 0.90 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         aria-label={recording ? 'Parar gravação' : 'Iniciar gravação'}
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          background: recording
+            ? 'linear-gradient(135deg, #C84C4C 0%, #A03030 100%)'
+            : 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
+          boxShadow: recording
+            ? '0 6px 24px rgba(200, 76, 76, 0.45)'
+            : '0 6px 24px rgba(201, 168, 76, 0.45)',
+        }}
       >
-        {recording ? (
-          <div className="w-7 h-7 rounded bg-white" />
-        ) : (
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
-        )}
-      </button>
+        <AnimatePresence mode="wait">
+          {recording ? (
+            <motion.span
+              key="stop"
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.6, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Square size={28} color="white" fill="white" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="mic"
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.6, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Mic2 size={30} color="white" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
     </div>
   )
 }

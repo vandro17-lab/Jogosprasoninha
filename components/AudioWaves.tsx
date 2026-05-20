@@ -1,21 +1,40 @@
 'use client'
 
-export default function AudioWaves({ active }: { active: boolean }) {
-  const bars = [0.3, 0.6, 1, 0.8, 0.5, 0.9, 0.4, 0.7, 1, 0.6, 0.3, 0.8]
+import { motion } from 'framer-motion'
 
+const HEIGHTS = [0.30, 0.60, 1.00, 0.75, 0.50, 0.90, 0.40, 0.70, 1.00, 0.60, 0.30, 0.80]
+const SPEEDS  = [0.80, 0.70, 0.90, 0.75, 0.85, 0.65, 0.95, 0.72, 0.88, 0.68, 0.82, 0.78]
+
+export default function AudioWaves({ active }: { active: boolean }) {
   return (
     <div className="flex items-center justify-center gap-[3px] h-10">
-      {bars.map((height, i) => (
-        <div
+      {HEIGHTS.map((h, i) => (
+        <motion.div
           key={i}
-          className="w-1 rounded-full transition-all duration-300"
+          animate={
+            active
+              ? { scaleY: [0.25, h, 0.25], backgroundColor: '#C9A84C' }
+              : { scaleY: 0.18, backgroundColor: '#E8D5A3' }
+          }
+          transition={
+            active
+              ? {
+                  scaleY: {
+                    duration: SPEEDS[i],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: i * 0.065,
+                  },
+                  backgroundColor: { duration: 0.3 },
+                }
+              : { duration: 0.4, ease: 'easeOut' }
+          }
           style={{
-            backgroundColor: active ? '#C9A84C' : '#E8D5A3',
-            height: active ? `${height * 36}px` : '6px',
-            animation: active
-              ? `wave ${0.8 + i * 0.1}s ease-in-out infinite alternate`
-              : 'none',
-            animationDelay: `${i * 0.07}s`,
+            width: 4,
+            height: 36,
+            borderRadius: 9999,
+            transformOrigin: 'center',
+            backgroundColor: '#E8D5A3',
           }}
         />
       ))}

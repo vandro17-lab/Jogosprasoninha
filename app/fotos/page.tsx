@@ -2,14 +2,27 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { Camera, Images } from 'lucide-react'
 import PolaroidPhoto from '@/components/PolaroidPhoto'
 import ProgressDots from '@/components/ProgressDots'
+import DecoBackground from '@/components/DecoBackground'
 import { getSession } from '@/lib/session-store'
 
 interface PhotoPreview {
   file: File
   url: string
   uploaded: boolean
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: 'easeOut' as const } },
+}
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.10 } },
 }
 
 export default function FotosPage() {
@@ -45,7 +58,7 @@ export default function FotosPage() {
         await fetch('/api/upload-photo', { method: 'POST', body: form })
         photo.uploaded = true
       } catch {
-        // silently continue — photo is shown locally even if upload fails
+        // silently continue — photo shown locally even if upload fails
       }
     }
     setUploading(false)
@@ -63,29 +76,40 @@ export default function FotosPage() {
   const rotations = [-3, 2, -1, 3, -2, 1]
 
   return (
-    <main className="min-h-screen flex flex-col px-6 py-10">
-      <div className="max-w-sm w-full mx-auto flex flex-col gap-6 animate-fade-in">
-        <div className="text-center">
+    <main className="min-h-screen flex flex-col px-6 py-10 relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at top, #F7EDD8 0%, #FDFCFA 65%)' }}
+      />
+      <DecoBackground variant="default" />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
+      >
+        <motion.div variants={itemVariants} className="text-center">
           <ProgressDots total={5} current={3} />
           <h1 className="font-playfair text-xl text-text-dark mt-4">Fotos com a Sônia 😊</h1>
-        </div>
+        </motion.div>
 
-        {/* Texto */}
-        <div
-          className="rounded-2xl p-5 text-center"
-          style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-        >
+        <motion.div variants={itemVariants} className="glass-card p-5 text-center">
           <p className="text-text-dark text-sm leading-relaxed">
             Você também pode enviar fotos com a Sônia 😊
           </p>
           <p className="text-text-muted text-xs mt-2 leading-relaxed">
             Pode até ser uma foto antiga em papel. Basta tirar uma foto dela com a câmera do celular.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Preview polaroid */}
+        {/* Polaroid previews */}
         {photos.length > 0 && (
-          <div className="flex flex-wrap gap-4 justify-center py-2 animate-fade-in">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap gap-4 justify-center py-2"
+          >
             {photos.map((photo, i) => (
               <PolaroidPhoto
                 key={photo.url}
@@ -95,7 +119,7 @@ export default function FotosPage() {
                 onRemove={() => removePhoto(i)}
               />
             ))}
-          </div>
+          </motion.div>
         )}
 
         {uploading && (
@@ -104,7 +128,7 @@ export default function FotosPage() {
           </p>
         )}
 
-        {/* Inputs ocultos */}
+        {/* Hidden file inputs */}
         <input
           ref={cameraInputRef}
           type="file"
@@ -123,39 +147,39 @@ export default function FotosPage() {
           onChange={(e) => handleFiles(e.target.files)}
         />
 
-        {/* Botões de upload */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
+        {/* Upload buttons */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+          <motion.button
             onClick={() => cameraInputRef.current?.click()}
-            className="py-4 rounded-2xl font-medium text-text-dark text-sm transition-all duration-200 active:scale-98 flex flex-col items-center gap-1"
-            style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="py-4 rounded-2xl font-medium text-text-dark text-sm flex flex-col items-center gap-2 glass-card"
           >
-            <span className="text-2xl">📷</span>
+            <Camera size={22} color="#C9A84C" strokeWidth={1.5} />
             <span>Abrir câmera</span>
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => fileInputRef.current?.click()}
-            className="py-4 rounded-2xl font-medium text-text-dark text-sm transition-all duration-200 active:scale-98 flex flex-col items-center gap-1"
-            style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="py-4 rounded-2xl font-medium text-text-dark text-sm flex flex-col items-center gap-2 glass-card"
           >
-            <span className="text-2xl">🖼️</span>
+            <Images size={22} color="#C9A84C" strokeWidth={1.5} />
             <span>Escolher fotos</span>
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
-        {/* Continuar */}
-        <button
+        <motion.button
+          variants={itemVariants}
           onClick={() => router.push('/audio-final')}
           disabled={uploading}
-          className="w-full py-4 rounded-2xl font-medium text-white text-base transition-all duration-200 active:scale-98 shadow-lg disabled:opacity-60"
-          style={{
-            background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
-            boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
-          }}
+          whileHover={uploading ? {} : { scale: 1.02 }}
+          whileTap={uploading ? {} : { scale: 0.97 }}
+          className="w-full py-4 rounded-2xl font-medium text-white text-base shadow-lg disabled:opacity-60 shimmer-btn"
         >
           {photos.length > 0 ? 'Continuar com as fotos' : 'Pular por agora'}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </main>
   )
 }

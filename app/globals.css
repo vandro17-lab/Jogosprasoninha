@@ -11,8 +11,18 @@
   --color-text-muted: #8B7355;
   --color-blush: #F5EDE0;
 
+  /* New premium palette */
+  --color-rose: #FBF0F0;
+  --color-rose-mid: #F4E0E0;
+  --color-rose-dark: #E8C8C8;
+  --color-pearl: #FDFCFA;
+  --color-champagne: #F7EDD8;
+  --color-recording: #C84C4C;
+  --color-recording-light: #F4CCCC;
+
   --font-playfair: 'Playfair Display', Georgia, serif;
   --font-inter: 'Inter', system-ui, sans-serif;
+  --font-poppins: 'Poppins', system-ui, sans-serif;
 }
 
 * {
@@ -23,11 +33,13 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background-color: #FAF7F2;
+  background-color: #FDFCFA;
   color: #3D3228;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-poppins, 'Inter', system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ─── Keyframes ─── */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -35,8 +47,8 @@ body {
 }
 
 @keyframes toast-enter {
-  0%   { opacity: 0; transform: scale(0.85) translateY(12px); }
-  60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  0%   { opacity: 0; transform: scale(0.88) translateY(10px); }
+  55%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
@@ -48,9 +60,9 @@ body {
 }
 
 @keyframes pulse-ring {
-  0%   { transform: scale(1);   opacity: 0.6; }
+  0%   { transform: scale(1);    opacity: 0.6; }
   50%  { transform: scale(1.15); opacity: 0.2; }
-  100% { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1);    opacity: 0.6; }
 }
 
 @keyframes wave {
@@ -66,6 +78,29 @@ body {
   70%       { transform: scale(1); }
 }
 
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-8px) rotate(1deg); }
+  66%       { transform: translateY(-4px) rotate(-0.5deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.08); }
+}
+
+@keyframes expand-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ─── Utility classes ─── */
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease forwards;
 }
@@ -78,21 +113,71 @@ body {
   animation: heartbeat 1.5s ease-in-out infinite;
 }
 
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+.animate-expand-ring {
+  animation: expand-ring 1.6s ease-out infinite;
+}
+
 .font-playfair {
   font-family: var(--font-playfair);
 }
 
-@keyframes toast-enter {
-  0%   { opacity: 0; transform: scale(0.85); }
-  20%  { opacity: 1; transform: scale(1.03); }
-  35%  { transform: scale(1); }
-  80%  { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.95); }
+.font-poppins {
+  font-family: var(--font-poppins);
 }
 
-@keyframes toast-bg-enter {
-  0%   { opacity: 0; }
-  20%  { opacity: 1; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; }
+/* ─── Glass card ─── */
+
+.glass-card {
+  background: rgba(255, 253, 249, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 8px 32px rgba(201, 168, 76, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 1.5rem;
+}
+
+.glass-card-rose {
+  background: rgba(251, 240, 240, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(232, 200, 200, 0.45);
+  box-shadow: 0 8px 32px rgba(200, 76, 76, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 1.5rem;
+}
+
+/* ─── Shimmer button ─── */
+
+.shimmer-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    110deg,
+    #C9A84C 0%,
+    #E8D5A3 35%,
+    #C9A84C 50%,
+    #A07830 75%,
+    #C9A84C 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 4px 24px rgba(201, 168, 76, 0.45);
+  transition: box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.shimmer-btn:hover {
+  box-shadow: 0 6px 32px rgba(201, 168, 76, 0.60);
+}
+
+.shimmer-btn:active {
+  opacity: 0.9;
 }

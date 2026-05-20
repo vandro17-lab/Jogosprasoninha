@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import MicButton from '@/components/MicButton'
 import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
+import DecoBackground from '@/components/DecoBackground'
 import { getSession, saveSession } from '@/lib/session-store'
 import { addLog } from '@/lib/debug-store'
 
@@ -18,6 +20,16 @@ const STEP_MSG: Record<Step, string> = {
   transcribing: 'Organizando sua lembrança…',
   correcting: 'Transformando suas palavras com carinho ✨',
   thinking: 'Sua mensagem está ficando linda 😊',
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: 'easeOut' as const } },
+}
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.10 } },
 }
 
 export default function MemoriasPage() {
@@ -241,7 +253,7 @@ export default function MemoriasPage() {
 
   async function handleFinalize() {
     const cs = getSession()
-    if (!cs.memories?.length) { setError('Conta pelo menos uma lembrança antes de finalizar 😊'); return }
+    if (!cs.memories?.length) { setError('Grave pelo menos uma lembrança para continuar 😊'); return }
     setFinalizing(true)
     addLog('Chamando OpenRouter (final)...')
     try {
@@ -277,62 +289,104 @@ export default function MemoriasPage() {
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <main className="min-h-screen flex flex-col px-6 py-10">
-      <div className="max-w-sm w-full mx-auto flex flex-col gap-6 animate-fade-in">
-        <div className="text-center">
+    <main className="min-h-screen flex flex-col px-6 py-10 relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at top, #F7EDD8 0%, #FDFCFA 65%)' }}
+      />
+      <DecoBackground variant="default" />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
+      >
+        <motion.div variants={itemVariants} className="text-center">
           <ProgressDots total={5} current={1} />
           {memoriesCount > 0 && (
             <p className="text-text-muted text-xs mt-3">
               {memoriesCount} {memoriesCount === 1 ? 'lembrança guardada' : 'lembranças guardadas'} 🤍
             </p>
           )}
-        </div>
+        </motion.div>
 
-        <div
-          className="rounded-3xl p-8 flex flex-col items-center gap-6"
-          style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-        >
+        <motion.div variants={itemVariants} className="glass-card p-8 flex flex-col items-center gap-6">
           {/* Estado inicial */}
-          {!recording && step === 'idle' && !aiResponse && !audioSaved && (
-            <div className="text-center animate-fade-in">
-              <p className="font-playfair text-xl text-text-dark">
-                {memoriesCount === 0 ? `Perfeito${session.nome ? `, ${session.nome}` : ''} 😊` : 'Mais uma lembrança? 😊'}
-              </p>
-              <p className="text-text-muted text-sm mt-2 leading-relaxed whitespace-pre-line">
-                {memoriesCount === 0
-                  ? 'Agora toque no microfone e conte uma lembrança da Sônia.\n\nPode ser uma história simples… um momento engraçado… algo que marcou vocês ✨\n\nFale do seu jeito 🤍'
-                  : 'Cada memória deixa essa surpresa ainda mais especial ✨'}
-              </p>
-            </div>
-          )}
-
-          {/* Gravando */}
-          {recording && (
-            <div className="text-center animate-fade-in">
-              <p className="text-text-muted text-sm">🎙️ Estou te ouvindo…</p>
-              <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
-              {elapsed >= WARN_AT && (
-                <p className="text-amber-500 text-xs mt-1">✨ Últimos 30 segundos</p>
-              )}
-            </div>
-          )}
-
-          {/* Processando */}
-          {processing && (
-            <p className="text-text-muted text-sm animate-fade-in">{STEP_MSG[step]}</p>
-          )}
-
-          {/* Fallback */}
-          {audioSaved && !recording && step === 'idle' && (
-            <div className="w-full text-center animate-fade-in">
-              <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
-                <p className="text-text-dark text-sm leading-relaxed">
-                  Sua gravação foi salva com carinho 🤍<br />
-                  <span className="text-text-muted text-xs">Assim que possível ela será transcrita.</span>
+          <AnimatePresence mode="wait">
+            {!recording && step === 'idle' && !aiResponse && !audioSaved && (
+              <motion.div
+                key="initial"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="text-center"
+              >
+                <p className="font-playfair text-xl text-text-dark">
+                  {memoriesCount === 0 ? `Perfeito${session.nome ? `, ${session.nome}` : ''}` : 'Mais uma lembrança? 😊'}
                 </p>
-              </div>
-            </div>
-          )}
+                <p className="text-text-muted text-sm mt-2 leading-relaxed whitespace-pre-line">
+                  {memoriesCount === 0
+                    ? 'Agora toque no microfone e conte uma lembrança da Sônia.\n\nPode ser uma história simples… um momento engraçado… algo que marcou vocês ✨\n\nFale do seu jeito 🤍'
+                    : 'Cada memória deixa essa surpresa ainda mais especial ✨'}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Gravando */}
+            {recording && (
+              <motion.div
+                key="recording"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <motion.span
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.1, repeat: Infinity }}
+                    className="inline-block w-2 h-2 rounded-full bg-red-400"
+                  />
+                  <p className="text-text-muted text-sm">Estou te ouvindo…</p>
+                </div>
+                <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
+                {elapsed >= WARN_AT && (
+                  <p className="text-amber-500 text-xs mt-1">✨ Últimos 30 segundos</p>
+                )}
+              </motion.div>
+            )}
+
+            {/* Processando */}
+            {processing && (
+              <motion.p
+                key="processing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-text-muted text-sm"
+              >
+                {STEP_MSG[step]}
+              </motion.p>
+            )}
+
+            {/* Fallback — áudio salvo mas não transcrito */}
+            {audioSaved && !recording && step === 'idle' && (
+              <motion.div
+                key="saved"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="w-full text-center"
+              >
+                <div className="rounded-2xl p-4" style={{ background: 'rgba(240,232,216,0.7)' }}>
+                  <p className="text-text-dark text-sm leading-relaxed">
+                    Sua gravação foi salva com carinho 🤍<br />
+                    <span className="text-text-muted text-xs">Assim que possível ela será transcrita.</span>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AudioWaves active={recording} />
 
@@ -341,83 +395,116 @@ export default function MemoriasPage() {
           )}
 
           {processing && (
-            <div className="w-12 h-12 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                border: '2px solid rgba(201,168,76,0.25)',
+                borderTopColor: '#C9A84C',
+              }}
+            />
           )}
 
-          {/* Texto corrigido + resposta da IA */}
-          {aiResponse && !recording && step === 'idle' && (
-            <div className="w-full animate-fade-in flex flex-col gap-3">
-              {shownTranscript && (
-                <div className="rounded-xl px-4 py-2" style={{ background: '#F7F3EC' }}>
-                  <p className="text-text-muted text-xs mb-1">Entendi assim:</p>
-                  <p className="text-text-dark text-sm italic">"{shownTranscript}"</p>
-                </div>
-              )}
-
-              <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
-                <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line text-center">
-                  {aiResponse}
-                </p>
-              </div>
-
-              {isQuestion && (
-                <div className="flex flex-col gap-2 mt-1">
-                  <textarea
-                    value={answerText}
-                    onChange={(e) => setAnswerText(e.target.value)}
-                    placeholder="Digite sua resposta aqui…"
-                    rows={3}
-                    className="w-full rounded-xl px-4 py-3 text-sm text-text-dark resize-none outline-none"
-                    style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={submitAnswer}
-                      disabled={!answerText.trim() || processing}
-                      className="flex-1 py-3 rounded-xl text-sm font-medium text-gold-dark disabled:opacity-40"
-                      style={{ background: '#E8D5A3' }}
-                    >
-                      Enviar resposta
-                    </button>
-                    <button
-                      onClick={() => {
-                        const cs = getSession()
-                        const updated = [...(cs.memories ?? []), pendingTranscript]
-                        saveSession({ memories: updated })
-                        setMemoriesCount(updated.length)
-                        setPendingTranscript('')
-                        setIsQuestion(false)
-                        setAiResponse('Tudo bem, guardamos como está 🤍')
-                      }}
-                      className="px-4 py-3 rounded-xl text-xs text-text-muted"
-                      style={{ background: '#F0E8D8' }}
-                    >
-                      Pular
-                    </button>
+          {/* AI response + transcript */}
+          <AnimatePresence>
+            {aiResponse && !recording && step === 'idle' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="w-full flex flex-col gap-3"
+              >
+                {shownTranscript && (
+                  <div className="rounded-xl px-4 py-2" style={{ background: 'rgba(247,243,236,0.8)' }}>
+                    <p className="text-text-muted text-xs mb-1">Entendi assim:</p>
+                    <p className="text-text-dark text-sm italic">"{shownTranscript}"</p>
                   </div>
+                )}
+
+                <div className="rounded-2xl p-4" style={{ background: 'rgba(240,232,216,0.7)' }}>
+                  <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line text-center">
+                    {aiResponse}
+                  </p>
                 </div>
-              )}
-            </div>
+
+                {isQuestion && (
+                  <div className="flex flex-col gap-2 mt-1">
+                    <textarea
+                      value={answerText}
+                      onChange={(e) => setAnswerText(e.target.value)}
+                      placeholder="Digite sua resposta aqui…"
+                      rows={3}
+                      className="w-full rounded-xl px-4 py-3 text-sm text-text-dark resize-none outline-none"
+                      style={{ background: 'rgba(255,253,249,0.9)', border: '1px solid rgba(232,213,163,0.8)' }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={submitAnswer}
+                        disabled={!answerText.trim() || processing}
+                        className="flex-1 py-3 rounded-xl text-sm font-medium text-gold-dark disabled:opacity-40"
+                        style={{ background: '#E8D5A3' }}
+                      >
+                        Enviar resposta
+                      </button>
+                      <button
+                        onClick={() => {
+                          const cs = getSession()
+                          const updated = [...(cs.memories ?? []), pendingTranscript]
+                          saveSession({ memories: updated })
+                          setMemoriesCount(updated.length)
+                          setPendingTranscript('')
+                          setIsQuestion(false)
+                          setAiResponse('Tudo bem, guardamos como está 🤍')
+                        }}
+                        className="px-4 py-3 rounded-xl text-xs text-text-muted"
+                        style={{ background: '#F0E8D8' }}
+                      >
+                        Pular
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {error && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-red-400 text-sm text-center"
+            >
+              {error}
+            </motion.p>
           )}
+        </motion.div>
 
-          {error && <p className="text-red-400 text-sm text-center animate-fade-in">{error}</p>}
-        </div>
-
-        <button
+        <motion.button
+          variants={itemVariants}
           onClick={handleFinalize}
           disabled={finalizing || recording || processing || memoriesCount === 0}
-          className="w-full py-4 rounded-2xl font-medium text-gold-dark text-base transition-all duration-200 active:scale-98 disabled:opacity-40"
-          style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
+          whileHover={(finalizing || recording || processing || memoriesCount === 0) ? {} : { scale: 1.02 }}
+          whileTap={(finalizing || recording || processing || memoriesCount === 0) ? {} : { scale: 0.97 }}
+          className="w-full py-4 rounded-2xl font-medium text-base disabled:opacity-40"
+          style={{
+            background: 'rgba(240,232,216,0.85)',
+            border: '1px solid rgba(232,213,163,0.8)',
+            color: '#A07830',
+            backdropFilter: 'blur(8px)',
+          }}
         >
           {finalizing ? 'Preparando sua mensagem…' : 'Finalizar lembranças ✓'}
-        </button>
+        </motion.button>
 
         {memoriesCount === 0 && (
-          <p className="text-text-muted text-xs text-center">
+          <motion.p variants={itemVariants} className="text-text-muted text-xs text-center">
             Grave pelo menos uma lembrança para continuar 😊
-          </p>
+          </motion.p>
         )}
-      </div>
+      </motion.div>
     </main>
   )
 }

@@ -2,11 +2,24 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Mic, Square, Heart } from 'lucide-react'
 import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
+import DecoBackground from '@/components/DecoBackground'
 import { getSession } from '@/lib/session-store'
 
 type RecordState = 'idle' | 'recording' | 'preview' | 'uploading' | 'done'
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: 'easeOut' as const } },
+}
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.10 } },
+}
 
 export default function AudioFinalPage() {
   const router = useRouter()
@@ -80,15 +93,27 @@ export default function AudioFinalPage() {
     setTimeout(() => router.push('/obrigado'), 800)
   }
 
-  const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const formatTime = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <main className="min-h-screen flex flex-col px-6 py-10">
-      <div className="max-w-sm w-full mx-auto flex flex-col gap-6 animate-fade-in">
-        <div className="text-center">
+    <main className="min-h-screen flex flex-col px-6 py-10 relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at top, #F7EDD8 0%, #FDFCFA 65%)' }}
+      />
+      <DecoBackground variant="default" />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
+      >
+        <motion.div variants={itemVariants} className="text-center">
           <ProgressDots total={5} current={4} />
           <h1 className="font-playfair text-xl text-text-dark mt-4">
-            Deixe um recado para a Sônia 🎙️
+            Deixe um recado para a Sônia
           </h1>
           <p className="text-text-muted text-sm mt-1 leading-relaxed">
             Ela vai ouvir essa mensagem no aniversário 🤍
@@ -96,95 +121,177 @@ export default function AudioFinalPage() {
           <p className="text-xs text-text-muted mt-2">
             Pode falar algo simples… um carinho, uma saudade, um desejo bonito 😊
           </p>
-        </div>
+        </motion.div>
 
-        {/* Card do gravador */}
-        <div
-          className="rounded-3xl p-8 flex flex-col items-center gap-6"
-          style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-        >
-          {state === 'idle' && (
-            <>
-              <p className="text-text-muted text-sm text-center">
-                Toque no botão para gravar uma mensagem de voz
-              </p>
-              <AudioWaves active={false} />
-              <button
-                onClick={startRecording}
-                className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 active:scale-95"
-                style={{
-                  background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
-                  boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
-                }}
+        {/* Recorder card */}
+        <motion.div variants={itemVariants} className="glass-card p-8 flex flex-col items-center gap-6">
+          <AnimatePresence mode="wait">
+            {state === 'idle' && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="flex flex-col items-center gap-6 w-full"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
-              </button>
-            </>
-          )}
+                <p className="text-text-muted text-sm text-center">
+                  Toque no botão para gravar uma mensagem de voz
+                </p>
+                <AudioWaves active={false} />
+                <motion.button
+                  onClick={startRecording}
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.92 }}
+                  style={{
+                    width: 88,
+                    height: 88,
+                    borderRadius: '50%',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
+                    boxShadow: '0 6px 24px rgba(201,168,76,0.45)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Mic size={34} color="white" />
+                </motion.button>
+              </motion.div>
+            )}
 
-          {state === 'recording' && (
-            <>
-              <p className="text-text-muted text-sm">🎙️ Gravando…</p>
-              <p className="font-playfair text-3xl text-gold">{formatTime(elapsed)}</p>
-              <AudioWaves active={true} />
-              <button
-                onClick={stopRecording}
-                className="w-20 h-20 rounded-full bg-red-400 hover:bg-red-500 flex items-center justify-center shadow-lg transition-all duration-200 active:scale-95"
+            {state === 'recording' && (
+              <motion.div
+                key="recording"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="flex flex-col items-center gap-6 w-full"
               >
-                <div className="w-7 h-7 rounded bg-white" />
-              </button>
-              <p className="text-text-muted text-xs">Toque para finalizar</p>
-            </>
-          )}
+                <div className="flex items-center gap-2">
+                  <motion.span
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="inline-block w-2 h-2 rounded-full bg-red-400"
+                  />
+                  <p className="text-text-muted text-sm">Gravando…</p>
+                </div>
+                <p className="font-playfair text-3xl text-gold">{formatTime(elapsed)}</p>
+                <AudioWaves active={true} />
+                <div className="relative">
+                  {/* Expanding ring */}
+                  <motion.div
+                    animate={{ scale: [1, 2.0, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' as const }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      background: 'rgba(200, 76, 76, 0.25)',
+                    }}
+                  />
+                  <motion.button
+                    onClick={stopRecording}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.92 }}
+                    style={{
+                      position: 'relative',
+                      width: 88,
+                      height: 88,
+                      borderRadius: '50%',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #C84C4C 0%, #A03030 100%)',
+                      boxShadow: '0 6px 24px rgba(200, 76, 76, 0.45)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Square size={30} color="white" fill="white" />
+                  </motion.button>
+                </div>
+                <p className="text-text-muted text-xs">Toque para finalizar</p>
+              </motion.div>
+            )}
 
-          {state === 'preview' && audioUrl && (
-            <>
-              <p className="text-text-muted text-sm text-center">Ouça com calma antes de enviar 😊</p>
-              <audio controls src={audioUrl} className="w-full rounded-xl" />
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={reRecord}
-                  className="flex-1 py-3 rounded-2xl text-text-dark text-sm font-medium transition-all duration-200 active:scale-98"
-                  style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
-                >
-                  Gravar novamente
-                </button>
-                <button
-                  onClick={sendAudio}
-                  className="flex-1 py-3 rounded-2xl text-white text-sm font-medium transition-all duration-200 active:scale-98 shadow-md"
-                  style={{ background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)' }}
-                >
-                  Enviar 🤍
-                </button>
-              </div>
-            </>
-          )}
+            {state === 'preview' && audioUrl && (
+              <motion.div
+                key="preview"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="flex flex-col items-center gap-4 w-full"
+              >
+                <p className="text-text-muted text-sm text-center">Ouça com calma antes de enviar 😊</p>
+                <audio controls src={audioUrl} className="w-full rounded-xl" />
+                <div className="flex gap-3 w-full">
+                  <motion.button
+                    onClick={reRecord}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex-1 py-3 rounded-2xl text-text-dark text-sm font-medium"
+                    style={{ background: 'rgba(240,232,216,0.7)', border: '1px solid rgba(232,213,163,0.8)' }}
+                  >
+                    Gravar novamente
+                  </motion.button>
+                  <motion.button
+                    onClick={sendAudio}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex-1 py-3 rounded-2xl text-white text-sm font-medium flex items-center justify-center gap-2 shimmer-btn"
+                  >
+                    Enviar <Heart size={14} fill="white" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
 
-          {state === 'uploading' && (
-            <>
-              <p className="text-text-muted text-sm">Enviando seu áudio…</p>
-              <div className="w-12 h-12 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
-            </>
-          )}
+            {state === 'uploading' && (
+              <motion.div
+                key="uploading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center gap-4"
+              >
+                <p className="text-text-muted text-sm">Enviando seu áudio…</p>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(201,168,76,0.25)',
+                    borderTopColor: '#C9A84C',
+                  }}
+                />
+              </motion.div>
+            )}
 
-          {state === 'done' && (
-            <p className="text-gold font-playfair text-lg animate-fade-in">Áudio enviado 🤍</p>
-          )}
-        </div>
+            {state === 'done' && (
+              <motion.p
+                key="done"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-gold font-playfair text-lg"
+              >
+                Áudio enviado 🤍
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        {/* Pular */}
         {(state === 'idle' || state === 'preview') && (
-          <button
+          <motion.button
+            variants={itemVariants}
             onClick={() => router.push('/obrigado')}
             className="text-text-muted text-sm underline text-center"
           >
             Pular esta etapa
-          </button>
+          </motion.button>
         )}
-      </div>
+      </motion.div>
     </main>
   )
 }

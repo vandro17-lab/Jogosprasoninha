@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { UserRound } from 'lucide-react'
 import RelationSelector from '@/components/RelationSelector'
 import ProgressDots from '@/components/ProgressDots'
 import Toast from '@/components/Toast'
+import DecoBackground from '@/components/DecoBackground'
 import { findFamilyMember } from '@/lib/family-members'
 import { saveSession } from '@/lib/session-store'
 
@@ -14,6 +17,16 @@ function formatPhone(value: string): string {
   if (digits.length <= 2) return digits.length ? `(${digits}` : ''
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: 'easeOut' as const } },
+}
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.10 } },
 }
 
 export default function IdentificacaoPage() {
@@ -67,7 +80,13 @@ export default function IdentificacaoPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at top, #FBF0F0 0%, #FDFCFA 65%)' }}
+      />
+      <DecoBackground variant="rose" />
+
       {toastMsg && (
         <Toast
           message={toastMsg}
@@ -75,19 +94,22 @@ export default function IdentificacaoPage() {
           onDone={() => router.push('/memorias')}
         />
       )}
-      <div className="max-w-sm w-full flex flex-col gap-6 animate-fade-in">
-        <div className="text-center">
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 max-w-sm w-full flex flex-col gap-6"
+      >
+        <motion.div variants={itemVariants} className="text-center">
           <ProgressDots total={5} current={0} />
           <h1 className="font-playfair text-2xl text-text-dark mt-4">Que bom ter você aqui 😊</h1>
           <p className="text-text-muted text-sm mt-1">Antes de começarmos… como a Sônia te conhece?</p>
-        </div>
+        </motion.div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Campo nome */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-          >
+          <motion.div variants={itemVariants} className="glass-card p-5">
             <label className="block text-text-muted text-xs font-medium mb-2 uppercase tracking-wide">
               Seu nome
             </label>
@@ -101,39 +123,41 @@ export default function IdentificacaoPage() {
                 autoFocus
                 autoComplete="given-name"
               />
-              <span className="text-2xl">🙂</span>
+              <UserRound size={24} color="#C9A84C" strokeWidth={1.5} />
             </div>
-          </div>
+          </motion.div>
 
           {/* Seletor de parentesco */}
           {showSelector && (
-            <div
-              className="rounded-2xl p-5 animate-fade-in"
-              style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="glass-card p-5"
             >
               <label className="block text-text-muted text-xs font-medium mb-3 uppercase tracking-wide">
                 Qual sua relação com a Sônia?
               </label>
               <RelationSelector value={parentesco} onChange={setParentesco} />
-            </div>
+            </motion.div>
           )}
 
           {/* Parentesco identificado automaticamente */}
           {!showSelector && parentesco && (
-            <div
-              className="rounded-2xl px-5 py-3 flex items-center gap-2 animate-fade-in"
-              style={{ background: '#F0E8D8' }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25 }}
+              className="rounded-2xl px-5 py-3 flex items-center gap-2"
+              style={{ background: 'rgba(240,232,216,0.7)', border: '1px solid rgba(232,213,163,0.6)' }}
             >
               <span className="text-gold text-lg">✓</span>
               <span className="text-text-dark text-sm capitalize">{parentesco} da Sônia</span>
-            </div>
+            </motion.div>
           )}
 
           {/* Campo telefone */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
-          >
+          <motion.div variants={itemVariants} className="glass-card p-5">
             <label className="block text-text-muted text-xs font-medium mb-2 uppercase tracking-wide">
               WhatsApp <span className="normal-case text-text-muted/60">(opcional)</span>
             </label>
@@ -146,25 +170,30 @@ export default function IdentificacaoPage() {
               inputMode="numeric"
             />
             <p className="text-text-muted text-xs mt-2">Caso precisemos falar com você 😊</p>
-          </div>
+          </motion.div>
 
           {error && (
-            <p className="text-red-400 text-sm text-center animate-fade-in">{error}</p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-red-400 text-sm text-center"
+            >
+              {error}
+            </motion.p>
           )}
 
-          <button
+          <motion.button
+            variants={itemVariants}
             type="submit"
             disabled={loading}
-            className="w-full py-4 rounded-2xl font-medium text-white text-lg transition-all duration-200 active:scale-98 shadow-lg disabled:opacity-60"
-            style={{
-              background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
-              boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
-            }}
+            whileHover={loading ? {} : { scale: 1.02 }}
+            whileTap={loading ? {} : { scale: 0.97 }}
+            className="w-full py-4 rounded-2xl text-white text-lg disabled:opacity-60 shimmer-btn"
           >
             {loading ? 'Aguarde...' : 'Continuar ✨'}
-          </button>
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </main>
   )
 }

@@ -1,7 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Heart, Flower2, Sparkles } from 'lucide-react'
 import { getSession, clearSession } from '@/lib/session-store'
+import DecoBackground from '@/components/DecoBackground'
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' as const } },
+}
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12 } },
+}
 
 export default function ObrigadoPage() {
   const [nome, setNome] = useState('')
@@ -13,22 +26,37 @@ export default function ObrigadoPage() {
   }, [])
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at center, #F0E8D8 0%, #FAF7F2 70%)' }}
+        style={{ background: 'radial-gradient(ellipse at center, #FBF0F0 0%, #F7EDD8 40%, #FDFCFA 80%)' }}
       />
+      <DecoBackground variant="rose" />
 
-      <div className="relative z-10 max-w-sm w-full flex flex-col items-center gap-8 animate-fade-in text-center">
-        <div className="animate-heartbeat text-6xl">🤍</div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 max-w-sm w-full flex flex-col items-center gap-8 text-center"
+      >
+        {/* Animated heart */}
+        <motion.div
+          variants={itemVariants}
+          animate={{
+            scale: [1, 1.18, 1, 1.12, 1],
+            transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+          }}
+        >
+          <Heart size={72} color="#E8C8C8" fill="#E8C8C8" strokeWidth={1} />
+        </motion.div>
 
-        <h1 className="font-playfair text-3xl text-text-dark">
+        <motion.h1 variants={itemVariants} className="font-playfair text-3xl text-text-dark">
           {nome ? `Obrigado, ${nome} ✨` : 'Obrigado ✨'}
-        </h1>
+        </motion.h1>
 
-        <div
-          className="w-full rounded-3xl p-6 flex flex-col gap-3"
-          style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
+        <motion.div
+          variants={itemVariants}
+          className="glass-card-rose w-full p-6 flex flex-col gap-3"
         >
           <p className="text-text-dark leading-relaxed text-base">
             Sua lembrança foi guardada com carinho e fará parte dessa surpresa tão especial para a Sônia 😊
@@ -42,20 +70,29 @@ export default function ObrigadoPage() {
           <p className="text-text-muted text-sm mt-1">
             Até lá, por favor… mantenha segredo 😊✨
           </p>
-        </div>
+        </motion.div>
 
-        <div className="flex gap-2 text-gold text-2xl">
-          <span>🌸</span>
-          <span>✨</span>
-          <span>🤍</span>
-          <span>✨</span>
-          <span>🌸</span>
-        </div>
+        {/* Decorative icon row */}
+        <motion.div
+          variants={itemVariants}
+          className="flex gap-4 items-center"
+          style={{ color: '#E8C8C8' }}
+        >
+          {[Flower2, Sparkles, Heart, Sparkles, Flower2].map((Icon, i) => (
+            <motion.span
+              key={i}
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.25, ease: 'easeInOut' }}
+            >
+              <Icon size={20} strokeWidth={1.4} />
+            </motion.span>
+          ))}
+        </motion.div>
 
-        <p className="text-text-muted text-xs">
+        <motion.p variants={itemVariants} className="text-text-muted text-xs">
           Você já pode fechar esta página 😊
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     </main>
   )
 }

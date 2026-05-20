@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ToastProps {
   message: string
@@ -11,49 +12,61 @@ interface ToastProps {
 
 export default function Toast({ message, duration = 2600, onDone }: ToastProps) {
   const [mounted, setMounted] = useState(false)
+  const [visible, setVisible] = useState(true)
   const onDoneRef = useRef(onDone)
   useEffect(() => { onDoneRef.current = onDone })
 
   useEffect(() => {
     setMounted(true)
-    const timer = setTimeout(() => onDoneRef.current?.(), duration)
-    return () => clearTimeout(timer)
+    const hideAt = duration - 400
+    const hideTimer = setTimeout(() => setVisible(false), hideAt > 0 ? hideAt : duration)
+    const doneTimer = setTimeout(() => onDoneRef.current?.(), duration)
+    return () => { clearTimeout(hideTimer); clearTimeout(doneTimer) }
   }, [duration])
 
   if (!mounted) return null
 
   return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 2rem',
-        backdropFilter: 'blur(3px)',
-        WebkitBackdropFilter: 'blur(3px)',
-        background: 'rgba(250,247,242,0.45)',
-        animation: `toast-bg-enter ${duration}ms ease forwards`,
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #FFFDF9 0%, #F5EDD8 100%)',
-          border: '1px solid #E8D5A3',
-          boxShadow: '0 12px 40px rgba(201,168,76,0.30)',
-          borderRadius: '1.5rem',
-          padding: '1.5rem 2rem',
-          textAlign: 'center',
-          maxWidth: '20rem',
-          animation: `toast-enter ${duration}ms cubic-bezier(0.34,1.4,0.64,1) forwards`,
-        }}
-      >
-        <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{message}</p>
-      </div>
-    </div>,
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 2rem',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            background: 'rgba(253, 252, 250, 0.55)',
+            pointerEvents: 'none',
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.82, y: 16, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.90, y: -8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.05 }}
+            className="glass-card"
+            style={{
+              padding: '1.75rem 2rem',
+              textAlign: 'center',
+              maxWidth: '20rem',
+            }}
+          >
+            <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.65', whiteSpace: 'pre-line' }}>
+              {message}
+            </p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body
   )
 }
