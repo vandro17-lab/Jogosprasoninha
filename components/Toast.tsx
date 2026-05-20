@@ -10,6 +10,13 @@ interface ToastProps {
   onDone?: () => void
 }
 
+const SPARKLE_POS = [
+  { top: 8,    left: 14,  size: 12, delay: 0.0 },
+  { top: 14,   right: 16, size: 10, delay: 0.6 },
+  { bottom: 12, right: 24, size: 11, delay: 1.2 },
+  { bottom: 16, left: 28, size: 9,  delay: 1.8 },
+]
+
 export default function Toast({ message, duration = 2600, onDone }: ToastProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(true)
@@ -42,8 +49,8 @@ export default function Toast({ message, duration = 2600, onDone }: ToastProps) 
             alignItems: 'center',
             justifyContent: 'center',
             padding: '0 2rem',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(10px) saturate(120%)',
+            WebkitBackdropFilter: 'blur(10px) saturate(120%)',
             background: 'rgba(253, 252, 250, 0.55)',
             pointerEvents: 'none',
           }}
@@ -53,14 +60,42 @@ export default function Toast({ message, duration = 2600, onDone }: ToastProps) 
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.90, y: -8, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.05 }}
-            className="glass-card"
+            className="glass-card-ornate relative"
             style={{
-              padding: '1.75rem 2rem',
+              padding: '1.85rem 2.1rem',
               textAlign: 'center',
-              maxWidth: '20rem',
+              maxWidth: '20.5rem',
             }}
           >
-            <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.65', whiteSpace: 'pre-line' }}>
+            {/* Floating sparkles around toast */}
+            {SPARKLE_POS.map((p, i) => (
+              <motion.div
+                key={i}
+                aria-hidden
+                className="absolute"
+                style={{
+                  top: p.top,
+                  left: p.left,
+                  right: p.right,
+                  bottom: p.bottom,
+                  width: p.size,
+                  height: p.size,
+                  color: '#C9A84C',
+                  zIndex: 3,
+                }}
+                animate={{ opacity: [0, 0.95, 0], scale: [0.6, 1.1, 0.7], rotate: [0, 90] }}
+                transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: p.delay }}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" width={p.size} height={p.size}>
+                  <path d="M12 1 L13.4 9.2 L22 12 L13.4 14.8 L12 23 L10.6 14.8 L2 12 L10.6 9.2 Z" />
+                </svg>
+              </motion.div>
+            ))}
+
+            <p
+              className="relative"
+              style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.65', whiteSpace: 'pre-line', zIndex: 2 }}
+            >
               {message}
             </p>
           </motion.div>

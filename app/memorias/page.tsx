@@ -7,6 +7,7 @@ import MicButton from '@/components/MicButton'
 import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
 import DecoBackground from '@/components/DecoBackground'
+import FloralOrnament from '@/components/FloralOrnament'
 import { getSession, saveSession } from '@/lib/session-store'
 import { addLog } from '@/lib/debug-store'
 
@@ -289,29 +290,40 @@ export default function MemoriasPage() {
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <main className="min-h-screen flex flex-col px-6 py-10 relative overflow-hidden">
+    <main className="min-h-screen flex flex-col px-6 py-12 relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at top, #F7EDD8 0%, #FDFCFA 65%)' }}
       />
-      <DecoBackground variant="default" />
+      <DecoBackground variant="ornate" />
 
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
+        className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-7"
       >
-        <motion.div variants={itemVariants} className="text-center">
+        <motion.div variants={itemVariants} className="flex flex-col items-center gap-4">
           <ProgressDots total={5} current={1} />
           {memoriesCount > 0 && (
-            <p className="text-text-muted text-xs mt-3">
-              {memoriesCount} {memoriesCount === 1 ? 'lembrança guardada' : 'lembranças guardadas'} 🤍
+            <p
+              className="text-xs tracking-luxe text-gold-dark px-4 py-1.5 rounded-full"
+              style={{
+                background: 'linear-gradient(135deg, rgba(232,213,163,0.30), rgba(247,237,216,0.55))',
+                border: '1px solid rgba(232,213,163,0.45)',
+                boxShadow: '0 1px 0 rgba(255,255,255,0.55) inset',
+                letterSpacing: '0.16em',
+              }}
+            >
+              {memoriesCount} {memoriesCount === 1 ? 'lembrança guardada' : 'lembranças guardadas'}
             </p>
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="glass-card p-8 flex flex-col items-center gap-6">
+        <motion.div variants={itemVariants} className="relative">
+          <FloralOrnament position="tl" size={44} tone="gold" opacity={0.5} />
+          <FloralOrnament position="br" size={44} tone="gold" opacity={0.5} />
+          <div className="glass-card-soft-rose p-8 flex flex-col items-center gap-6 relative" style={{ zIndex: 2 }}>
           {/* Estado inicial */}
           <AnimatePresence mode="wait">
             {!recording && step === 'idle' && !aiResponse && !audioSaved && (
@@ -480,20 +492,23 @@ export default function MemoriasPage() {
               {error}
             </motion.p>
           )}
+          </div>
         </motion.div>
 
         <motion.button
           variants={itemVariants}
           onClick={handleFinalize}
           disabled={finalizing || recording || processing || memoriesCount === 0}
-          whileHover={(finalizing || recording || processing || memoriesCount === 0) ? {} : { scale: 1.02 }}
+          whileHover={(finalizing || recording || processing || memoriesCount === 0) ? {} : { scale: 1.02, y: -1 }}
           whileTap={(finalizing || recording || processing || memoriesCount === 0) ? {} : { scale: 0.97 }}
-          className="w-full py-4 rounded-2xl font-medium text-base disabled:opacity-40"
+          className="w-full py-4 rounded-2xl font-medium text-base disabled:opacity-40 focus-ring"
           style={{
-            background: 'rgba(240,232,216,0.85)',
-            border: '1px solid rgba(232,213,163,0.8)',
-            color: '#A07830',
+            background: 'linear-gradient(180deg, rgba(247,237,216,0.92) 0%, rgba(232,213,163,0.55) 100%)',
+            border: '1px solid rgba(201,168,76,0.45)',
+            color: '#8E6A24',
             backdropFilter: 'blur(8px)',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(61,50,40,0.04), 0 8px 22px -8px rgba(201,168,76,0.30)',
+            transition: 'box-shadow 0.3s var(--ease-luxe), transform 0.2s var(--ease-luxe)',
           }}
         >
           {finalizing ? 'Preparando sua mensagem…' : 'Finalizar lembranças ✓'}
