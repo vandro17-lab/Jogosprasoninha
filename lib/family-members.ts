@@ -13,6 +13,7 @@ export const FAMILY_MEMBERS: Record<string, FamilyMember> = {
   'patrícia': { parentesco: 'amiga', contexto: 'amiga da Sônia' },
   'claudia': { parentesco: 'amiga', contexto: 'amiga da Sônia' },
   'cláudia': { parentesco: 'amiga', contexto: 'amiga da Sônia' },
+  'raquel': { parentesco: 'nora', contexto: 'nora da Sônia' },
 }
 
 export function findFamilyMember(nome: string): FamilyMember | null {

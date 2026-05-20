@@ -12,6 +12,8 @@ const RELATIONS = [
   { value: 'pastora',  label: 'Pastora' },
   { value: 'filha',    label: 'Filha' },
   { value: 'filho',    label: 'Filho' },
+  { value: 'nora',     label: 'Nora' },
+  { value: 'genro',    label: 'Genro' },
   { value: 'outro',    label: 'Outro' },
 ]
 
