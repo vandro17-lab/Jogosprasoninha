@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import RelationSelector from '@/components/RelationSelector'
 import ProgressDots from '@/components/ProgressDots'
+import Toast from '@/components/Toast'
 import { findFamilyMember } from '@/lib/family-members'
 import { saveSession } from '@/lib/session-store'
 
@@ -22,6 +23,7 @@ export default function IdentificacaoPage() {
   const [showSelector, setShowSelector] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [toastMsg, setToastMsg] = useState('')
 
   useEffect(() => {
     if (nome.trim().length >= 2) {
@@ -55,7 +57,7 @@ export default function IdentificacaoPage() {
       })
       const data = await res.json()
       saveSession({ participantId: data.id, nome: nome.trim(), parentesco, telefone, memories: [], memoriaFinal: '' })
-      router.push('/memorias')
+      setToastMsg(`Que alegria ter você aqui, ${nome.trim()} 🤍\n\nSua lembrança vai fazer parte dessa homenagem tão especial para a Sônia ✨`)
     } catch {
       setError('Algo deu errado. Tente de novo 😊')
     } finally {
@@ -65,11 +67,18 @@ export default function IdentificacaoPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      {toastMsg && (
+        <Toast
+          message={toastMsg}
+          duration={3000}
+          onDone={() => router.push('/memorias')}
+        />
+      )}
       <div className="max-w-sm w-full flex flex-col gap-6 animate-fade-in">
         <div className="text-center">
           <ProgressDots total={5} current={0} />
-          <h1 className="font-playfair text-2xl text-text-dark mt-4">Olá 😊</h1>
-          <p className="text-text-muted text-sm mt-1">Antes de começar, como posso te chamar?</p>
+          <h1 className="font-playfair text-2xl text-text-dark mt-4">Que bom ter você aqui 😊</h1>
+          <p className="text-text-muted text-sm mt-1">Antes de começarmos… como a Sônia te conhece?</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -135,6 +144,7 @@ export default function IdentificacaoPage() {
               className="w-full bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
               inputMode="numeric"
             />
+            <p className="text-text-muted text-xs mt-2">Caso precisemos falar com você 😊</p>
           </div>
 
           {error && (
@@ -150,7 +160,7 @@ export default function IdentificacaoPage() {
               boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
             }}
           >
-            {loading ? 'Aguarde...' : 'Continuar'}
+            {loading ? 'Aguarde...' : 'Continuar ✨'}
           </button>
         </form>
       </div>

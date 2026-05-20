@@ -38,7 +38,7 @@ export default function RevisaoPage() {
       <div className="max-w-sm w-full mx-auto flex flex-col gap-6 animate-fade-in">
         <div className="text-center">
           <ProgressDots total={5} current={2} />
-          <h1 className="font-playfair text-xl text-text-dark mt-4">Organizei sua mensagem assim 😊</h1>
+          <h1 className="font-playfair text-xl text-text-dark mt-4">Sua homenagem ficou assim ✨</h1>
         </div>
 
         {/* Card da mensagem */}
@@ -92,7 +92,7 @@ export default function RevisaoPage() {
               boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
             }}
           >
-            {confirmed ? '✓ Confirmado!' : 'Confirmar mensagem'}
+            {confirmed ? '✓ Confirmado!' : 'Confirmar mensagem 🤍'}
           </button>
 
           <button
@@ -101,12 +101,12 @@ export default function RevisaoPage() {
             className="w-full py-3 rounded-2xl font-medium text-gold-dark text-base transition-all duration-200 active:scale-98"
             style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
           >
-            Adicionar mais uma lembrança
+            Adicionar outra lembrança
           </button>
         </div>
 
         <p className="text-text-muted text-xs text-center">
-          Você pode editar a mensagem antes de confirmar 😊
+          Você pode ajustar sua mensagem antes de confirmar 😊
         </p>
       </div>
     </main>

@@ -130,14 +130,12 @@ export default function MemoriasPage() {
     try {
       const session = getSession()
 
-      // Salva memória bruta
       await fetch('/api/save-memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ participantId: session.participantId, memoriaBreita: transcript }),
       })
 
-      // Pede resposta da IA
       const res = await fetch('/api/generate-final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,7 +147,6 @@ export default function MemoriasPage() {
       })
       const data = await res.json()
 
-      // Atualiza sessão com nova memória
       const updatedMemories = [...(session.memories ?? []), transcript]
       saveSession({ memories: updatedMemories })
       setMemoriesCount(updatedMemories.length)
@@ -221,19 +218,19 @@ export default function MemoriasPage() {
               <p className="font-playfair text-xl text-text-dark">
                 {memoriesCount === 0
                   ? `Perfeito${session.nome ? `, ${session.nome}` : ''} 😊`
-                  : 'Mais uma? 😊'}
+                  : 'Mais uma lembrança? 😊'}
               </p>
-              <p className="text-text-muted text-sm mt-2 leading-relaxed">
+              <p className="text-text-muted text-sm mt-2 leading-relaxed whitespace-pre-line">
                 {memoriesCount === 0
-                  ? 'Agora é só tocar no microfone e contar uma lembrança da Sônia.\n\nPode falar do seu jeito mesmo.'
-                  : 'Toque no microfone para contar mais uma lembrança.'}
+                  ? 'Agora toque no microfone e conte uma lembrança da Sônia.\n\nPode ser uma história simples… um momento engraçado… algo que marcou vocês ✨\n\nFale do seu jeito 🤍'
+                  : 'Cada memória deixa essa surpresa ainda mais especial ✨'}
               </p>
             </div>
           )}
 
           {recording && (
             <div className="text-center animate-fade-in">
-              <p className="text-text-muted text-sm">Estou ouvindo…</p>
+              <p className="text-text-muted text-sm">🎙️ Estou te ouvindo…</p>
               <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
             </div>
           )}
@@ -287,12 +284,12 @@ export default function MemoriasPage() {
           className="w-full py-4 rounded-2xl font-medium text-gold-dark text-base transition-all duration-200 active:scale-98 disabled:opacity-40"
           style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
         >
-          {finalizing ? 'Preparando sua mensagem…' : 'Finalizar ✓'}
+          {finalizing ? 'Preparando sua mensagem…' : 'Finalizar lembranças ✓'}
         </button>
 
         {memoriesCount === 0 && (
           <p className="text-text-muted text-xs text-center">
-            Grave pelo menos uma lembrança para finalizar
+            Grave pelo menos uma lembrança para continuar 😊
           </p>
         )}
       </div>
