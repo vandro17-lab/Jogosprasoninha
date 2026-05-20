@@ -6,6 +6,7 @@ import MicButton from '@/components/MicButton'
 import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
 import { getSession, saveSession } from '@/lib/session-store'
+import { addLog } from '@/lib/debug-store'
 
 const MAX_DURATION = 120
 const WARN_AT = 90
@@ -15,13 +16,14 @@ export default function MemoriasPage() {
   const [recording, setRecording] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [aiResponse, setAiResponse] = useState<string | null>(null)
+  const [isQuestion, setIsQuestion] = useState(false)
+  const [pendingTranscript, setPendingTranscript] = useState('')
+  const [answerText, setAnswerText] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const [memoriesCount, setMemoriesCount] = useState(0)
   const [error, setError] = useState('')
   const [finalizing, setFinalizing] = useState(false)
   const [audioSaved, setAudioSaved] = useState(false)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const [showDebug, setShowDebug] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -31,15 +33,10 @@ export default function MemoriasPage() {
 
   const session = getSession()
 
-  const log = useCallback((msg: string) => {
-    const ts = new Date().toLocaleTimeString('pt-BR')
-    setDebugLogs((prev) => [`[${ts}] ${msg}`, ...prev].slice(0, 20))
-  }, [])
-
   useEffect(() => {
     if (!session.nome) { router.replace('/identificacao'); return }
     setMemoriesCount(session.memories?.length ?? 0)
-    log('Página carregada')
+    addLog('Página memórias carregada')
   }, [])
 
   useEffect(() => {
@@ -53,17 +50,20 @@ export default function MemoriasPage() {
   const startRecording = useCallback(async () => {
     setError('')
     setAiResponse(null)
+    setIsQuestion(false)
     setAudioSaved(false)
+    setPendingTranscript('')
+    setAnswerText('')
     chunksRef.current = []
-    log('Iniciando gravação...')
+    addLog('Iniciando gravação...')
 
     let stream: MediaStream
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      log('Microfone OK')
+      addLog('Microfone OK')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      log(`Erro microfone: ${msg}`)
+      addLog(`Erro microfone: ${msg}`)
       setError('Não consegui acessar o microfone. Verifique as permissões 😊')
       return
     }
@@ -75,7 +75,7 @@ export default function MemoriasPage() {
       MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' :
       ''
     mimeTypeRef.current = mimeType
-    log(`Formato áudio: ${mimeType || 'padrão'}`)
+    addLog(`Formato: ${mimeType || 'padrão do navegador'}`)
 
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
     mediaRecorderRef.current = recorder
@@ -85,12 +85,11 @@ export default function MemoriasPage() {
     setRecording(true)
     setElapsed(0)
     timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000)
-  }, [log])
+  }, [])
 
   const stopRecording = useCallback(async () => {
     stopTimer()
     setRecording(false)
-    log('Gravação parada')
 
     const recorder = mediaRecorderRef.current
     if (!recorder) return
@@ -102,13 +101,13 @@ export default function MemoriasPage() {
 
     const chunks = chunksRef.current
     if (!chunks.length) {
-      log('Erro: nenhum chunk de áudio capturado')
+      addLog('Erro: nenhum chunk de áudio capturado')
       setError('Não ouvi nada. Tente falar mais perto do microfone 😊')
       return
     }
 
-    const totalSize = chunks.reduce((s, c) => s + c.size, 0)
-    log(`Áudio capturado: ${chunks.length} chunks, ${(totalSize / 1024).toFixed(1)}KB`)
+    const totalKB = (chunks.reduce((s, c) => s + c.size, 0) / 1024).toFixed(1)
+    addLog(`Áudio: ${chunks.length} chunks, ${totalKB}KB`)
 
     const mimeType = mimeTypeRef.current || 'audio/webm'
     const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm'
@@ -117,27 +116,25 @@ export default function MemoriasPage() {
     setProcessing(true)
     try {
       // 1. Transcrever
-      log('Chamando /api/transcribe (Groq Whisper)...')
+      addLog('Chamando Groq Whisper...')
       const form = new FormData()
       form.append('audio', blob, `audio.${ext}`)
       const transcribeRes = await fetch('/api/transcribe', { method: 'POST', body: form })
       const transcribeData = await transcribeRes.json()
 
-      log(`Resposta Groq: status=${transcribeRes.status} failed=${transcribeData.failed} transcript="${transcribeData.transcript?.slice(0, 60)}" error="${transcribeData.error ?? ''}"`)
+      addLog(`Groq: status=${transcribeRes.status} failed=${transcribeData.failed ?? false} text="${transcribeData.transcript?.slice(0, 50) ?? ''}" err="${transcribeData.error ?? ''}"`)
 
       if (transcribeData.failed || !transcribeData.transcript?.trim()) {
-        // Fallback: salvar áudio no Supabase
-        log('Transcrição falhou — salvando áudio como pendente...')
+        // Fallback: salvar áudio
+        addLog('Transcrição falhou — salvando áudio pendente...')
         const currentSession = getSession()
-        const fallbackForm = new FormData()
-        fallbackForm.append('file', blob, `audio.${ext}`)
-        fallbackForm.append('participantId', currentSession.participantId ?? '')
-        fallbackForm.append('tipo', 'memoria_pendente')
-        const uploadRes = await fetch('/api/upload-audio', { method: 'POST', body: fallbackForm })
-        const uploadData = await uploadRes.json()
-        log(`Upload fallback: status=${uploadRes.status} url="${uploadData.url ?? uploadData.error}"`)
+        const fbForm = new FormData()
+        fbForm.append('file', blob, `audio.${ext}`)
+        fbForm.append('participantId', currentSession.participantId ?? '')
+        fbForm.append('tipo', 'memoria_pendente')
+        const upRes = await fetch('/api/upload-audio', { method: 'POST', body: fbForm })
+        addLog(`Upload fallback: status=${upRes.status}`)
 
-        // Registra como memória pendente para liberar o botão Finalizar
         const placeholder = '[Áudio gravado — transcrição pendente]'
         const updatedMemories = [...(currentSession.memories ?? []), placeholder]
         saveSession({ memories: updatedMemories })
@@ -148,7 +145,8 @@ export default function MemoriasPage() {
       }
 
       const transcript = transcribeData.transcript
-      log(`Transcrição OK: "${transcript.slice(0, 80)}"`)
+      addLog(`Transcrição: "${transcript.slice(0, 80)}"`)
+
       const currentSession = getSession()
 
       // 2. Salvar memória bruta
@@ -158,28 +156,62 @@ export default function MemoriasPage() {
         body: JSON.stringify({ participantId: currentSession.participantId, memoriaBreita: transcript }),
       })
 
-      // 3. Resposta da IA
-      log('Chamando /api/generate-final (OpenRouter)...')
+      // 3. Resposta rápida do Gemini
+      addLog('Chamando Gemini (quick)...')
       const res = await fetch('/api/generate-final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'quick', transcript, nome: currentSession.nome }),
       })
       const data = await res.json()
-      log(`IA respondeu: status=${res.status} response="${data.response?.slice(0, 60) ?? data.error}"`)
+      addLog(`Gemini quick: status=${res.status} isQuestion=${data.isQuestion} text="${data.response?.slice(0, 60) ?? data.error}"`)
 
+      // Se o Gemini fez uma pergunta, segura a lembrança até ter a resposta
+      if (data.isQuestion) {
+        setPendingTranscript(transcript)
+        setIsQuestion(true)
+        setAiResponse(data.response)
+        setProcessing(false)
+        return
+      }
+
+      // 4. Salvar memória na sessão
       const updatedMemories = [...(currentSession.memories ?? []), transcript]
       saveSession({ memories: updatedMemories })
       setMemoriesCount(updatedMemories.length)
+      setIsQuestion(false)
       setAiResponse(data.response ?? 'Que lembrança bonita 😊')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      log(`Exceção: ${msg}`)
+      addLog(`Exceção: ${msg}`)
       setAiResponse('Que lembrança bonita 😊\n\nPode contar mais uma ou finalizar quando quiser.')
     } finally {
       setProcessing(false)
     }
-  }, [stopTimer, log])
+  }, [stopTimer])
+
+  async function submitAnswer() {
+    if (!answerText.trim() || !pendingTranscript) return
+    setProcessing(true)
+    const fullMemory = `${pendingTranscript}\n(Detalhe: ${answerText.trim()})`
+    addLog(`Resposta à pergunta: "${answerText.slice(0, 60)}"`)
+    const currentSession = getSession()
+
+    await fetch('/api/save-memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participantId: currentSession.participantId, memoriaBreita: fullMemory }),
+    })
+
+    const updatedMemories = [...(currentSession.memories ?? []), fullMemory]
+    saveSession({ memories: updatedMemories })
+    setMemoriesCount(updatedMemories.length)
+    setPendingTranscript('')
+    setAnswerText('')
+    setIsQuestion(false)
+    setAiResponse('Obrigada pelo detalhe! Ficou mais bonita ainda 🤍')
+    setProcessing(false)
+  }
 
   const handleMicClick = useCallback(() => {
     if (recording) stopRecording()
@@ -193,7 +225,7 @@ export default function MemoriasPage() {
       return
     }
     setFinalizing(true)
-    log('Chamando /api/generate-final (final)...')
+    addLog('Chamando Gemini (final)...')
     try {
       const res = await fetch('/api/generate-final', {
         method: 'POST',
@@ -207,12 +239,17 @@ export default function MemoriasPage() {
         }),
       })
       const data = await res.json()
-      log(`Final OK: status=${res.status}`)
+      addLog(`Gemini final: status=${res.status} ok=${!!data.mensagemFinal}`)
+      if (data.error && !data.mensagemFinal) {
+        setError(`Erro ao gerar mensagem: ${data.error}`)
+        setFinalizing(false)
+        return
+      }
       saveSession({ memoriaFinal: data.mensagemFinal })
       router.push('/revisao')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      log(`Erro final: ${msg}`)
+      addLog(`Erro final: ${msg}`)
       setError('Algo deu errado. Tente de novo 😊')
       setFinalizing(false)
     }
@@ -239,6 +276,7 @@ export default function MemoriasPage() {
           className="rounded-3xl p-8 flex flex-col items-center gap-6"
           style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
         >
+          {/* Estado inicial */}
           {!recording && !processing && !aiResponse && !audioSaved && (
             <div className="text-center animate-fade-in">
               <p className="font-playfair text-xl text-text-dark">
@@ -246,7 +284,7 @@ export default function MemoriasPage() {
                   ? `Perfeito${session.nome ? `, ${session.nome}` : ''} 😊`
                   : 'Mais uma? 😊'}
               </p>
-              <p className="text-text-muted text-sm mt-2 leading-relaxed">
+              <p className="text-text-muted text-sm mt-2 leading-relaxed whitespace-pre-line">
                 {memoriesCount === 0
                   ? 'Agora é só tocar no microfone e contar uma lembrança da Sônia.\n\nPode falar do seu jeito mesmo.'
                   : 'Toque no microfone para contar mais uma lembrança.'}
@@ -254,22 +292,23 @@ export default function MemoriasPage() {
             </div>
           )}
 
+          {/* Gravando */}
           {recording && (
             <div className="text-center animate-fade-in">
               <p className="text-text-muted text-sm">Estou ouvindo…</p>
               <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
               {elapsed >= WARN_AT && (
-                <p className="text-amber-500 text-xs mt-1 animate-fade-in">{remaining}s restantes</p>
+                <p className="text-amber-500 text-xs mt-1">{remaining}s restantes</p>
               )}
             </div>
           )}
 
+          {/* Processando */}
           {processing && (
-            <div className="text-center animate-fade-in">
-              <p className="text-text-muted text-sm">Transcrevendo sua lembrança…</p>
-            </div>
+            <p className="text-text-muted text-sm animate-fade-in">Transcrevendo sua lembrança…</p>
           )}
 
+          {/* Fallback: áudio salvo */}
           {audioSaved && !recording && !processing && (
             <div className="w-full text-center animate-fade-in">
               <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
@@ -292,18 +331,61 @@ export default function MemoriasPage() {
             <div className="w-12 h-12 rounded-full border-2 border-gold/30 border-t-gold animate-spin" />
           )}
 
+          {/* Resposta ou pergunta do Gemini */}
           {aiResponse && !recording && !processing && (
-            <div className="w-full text-center animate-fade-in">
+            <div className="w-full animate-fade-in">
               <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
-                <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line">{aiResponse}</p>
+                <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line text-center">
+                  {aiResponse}
+                </p>
               </div>
+
+              {/* Campo de resposta se for uma pergunta */}
+              {isQuestion && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <textarea
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    placeholder="Digite sua resposta aqui…"
+                    rows={3}
+                    className="w-full rounded-xl px-4 py-3 text-sm text-text-dark resize-none outline-none"
+                    style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitAnswer}
+                      disabled={!answerText.trim() || processing}
+                      className="flex-1 py-3 rounded-xl text-sm font-medium text-gold-dark transition-all disabled:opacity-40"
+                      style={{ background: '#E8D5A3' }}
+                    >
+                      Enviar resposta
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Pular a pergunta e salvar a memória mesmo assim
+                        const currentSession = getSession()
+                        const updatedMemories = [...(currentSession.memories ?? []), pendingTranscript]
+                        saveSession({ memories: updatedMemories })
+                        setMemoriesCount(updatedMemories.length)
+                        setPendingTranscript('')
+                        setIsQuestion(false)
+                        setAiResponse('Tudo bem, guardamos como está 🤍')
+                      }}
+                      className="px-4 py-3 rounded-xl text-xs text-text-muted transition-all"
+                      style={{ background: '#F0E8D8' }}
+                    >
+                      Pular
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {error && <p className="text-red-400 text-sm text-center animate-fade-in">{error}</p>}
         </div>
 
-        {/* Botão finalizar */}
+        {/* Finalizar */}
         <button
           onClick={handleFinalize}
           disabled={finalizing || recording || processing || memoriesCount === 0}
@@ -319,26 +401,13 @@ export default function MemoriasPage() {
           </p>
         )}
 
-        {/* Painel de debug — remover depois */}
-        <div className="mt-2">
-          <button
-            onClick={() => setShowDebug((v) => !v)}
-            className="w-full text-xs text-text-muted/50 py-1"
-          >
-            {showDebug ? '▲ ocultar log' : '▼ ver log de erros'}
-          </button>
-          {showDebug && (
-            <div
-              className="mt-1 rounded-xl p-3 text-xs font-mono leading-relaxed overflow-auto max-h-48"
-              style={{ background: '#1a1a1a', color: '#a8ff78' }}
-            >
-              {debugLogs.length === 0
-                ? <span className="text-gray-500">nenhum log ainda</span>
-                : debugLogs.map((l, i) => <div key={i}>{l}</div>)
-              }
-            </div>
-          )}
-        </div>
+        {/* Link para debug */}
+        <a
+          href="/debug"
+          className="text-center text-text-muted/40 text-xs mt-1"
+        >
+          ver log de erros
+        </a>
       </div>
     </main>
   )

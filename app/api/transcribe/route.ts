@@ -5,7 +5,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 async function callGroq(audio: File, apiKey: string): Promise<string> {
   const groqForm = new FormData()
   groqForm.append('file', audio)
-  groqForm.append('model', 'whisper-large-v3-turbo')
+  groqForm.append('model', 'whisper-large-v3')
   groqForm.append('language', 'pt')
   groqForm.append('response_format', 'json')
 
