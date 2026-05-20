@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ToastProps {
   message: string
@@ -9,19 +10,28 @@ interface ToastProps {
 }
 
 export default function Toast({ message, duration = 2600, onDone }: ToastProps) {
-  // Ref evita que o callback recriado a cada render cancele os timers
+  const [mounted, setMounted] = useState(false)
   const onDoneRef = useRef(onDone)
   useEffect(() => { onDoneRef.current = onDone })
 
   useEffect(() => {
+    setMounted(true)
     const timer = setTimeout(() => onDoneRef.current?.(), duration)
     return () => clearTimeout(timer)
-  }, [duration]) // duration é estável — onDone vive no ref
+  }, [duration])
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-8"
       style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 2rem',
         backdropFilter: 'blur(3px)',
         WebkitBackdropFilter: 'blur(3px)',
         background: 'rgba(250,247,242,0.45)',
@@ -30,16 +40,20 @@ export default function Toast({ message, duration = 2600, onDone }: ToastProps) 
       }}
     >
       <div
-        className="rounded-3xl px-8 py-6 text-center max-w-xs"
         style={{
           background: 'linear-gradient(135deg, #FFFDF9 0%, #F5EDD8 100%)',
           border: '1px solid #E8D5A3',
           boxShadow: '0 12px 40px rgba(201,168,76,0.30)',
+          borderRadius: '1.5rem',
+          padding: '1.5rem 2rem',
+          textAlign: 'center',
+          maxWidth: '20rem',
           animation: `toast-enter ${duration}ms cubic-bezier(0.34,1.4,0.64,1) forwards`,
         }}
       >
-        <p className="text-text-dark text-base leading-relaxed">{message}</p>
+        <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.6' }}>{message}</p>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
