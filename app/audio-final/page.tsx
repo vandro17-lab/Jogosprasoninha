@@ -29,6 +29,7 @@ export default function AudioFinalPage() {
   const [elapsed, setElapsed] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [participantId, setParticipantId] = useState<string | null>(null)
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -43,11 +44,27 @@ export default function AudioFinalPage() {
 
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          channelCount: { ideal: 1 },
+        },
+      })
       streamRef.current = stream
+      setLiveStream(stream)
       chunksRef.current = []
 
-      const mr = new MediaRecorder(stream)
+      const mimeType =
+        MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+        MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
+        MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : ''
+
+      const mr = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        audioBitsPerSecond: 96000,
+      })
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
@@ -55,6 +72,7 @@ export default function AudioFinalPage() {
         setAudioUrl(url)
         setState('preview')
         streamRef.current?.getTracks().forEach((t) => t.stop())
+        setLiveStream(null)
       }
 
       mr.start()
@@ -166,7 +184,7 @@ export default function AudioFinalPage() {
                       <p className="text-text-muted text-sm">Gravando…</p>
                     </div>
                     <p className="font-playfair text-4xl text-gradient-gold">{formatTime(elapsed)}</p>
-                    <AudioWaves active={true} />
+                    <AudioWaves active={true} stream={liveStream} />
                     <PremiumRecordButton onClick={stopRecording} recording={true} />
                     <p className="text-text-muted text-xs">Toque para finalizar</p>
                   </motion.div>

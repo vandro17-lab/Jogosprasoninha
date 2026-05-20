@@ -47,6 +47,7 @@ export default function MemoriasPage() {
   const [error, setError] = useState('')
   const [finalizing, setFinalizing] = useState(false)
   const [audioSaved, setAudioSaved] = useState(false)
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -84,7 +85,14 @@ export default function MemoriasPage() {
 
     let stream: MediaStream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          channelCount: { ideal: 1 },
+        },
+      })
       addLog('Microfone OK')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -93,6 +101,7 @@ export default function MemoriasPage() {
       return
     }
     streamRef.current = stream
+    setLiveStream(stream)
 
     const mimeType =
       MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
@@ -101,7 +110,10 @@ export default function MemoriasPage() {
     mimeTypeRef.current = mimeType
     addLog(`Formato: ${mimeType || 'padrão'}`)
 
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
+    const recorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {}),
+      audioBitsPerSecond: 96000,
+    })
     mediaRecorderRef.current = recorder
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.start(1000)
@@ -121,6 +133,7 @@ export default function MemoriasPage() {
     await new Promise<void>((resolve) => { recorder.onstop = () => resolve(); recorder.stop() })
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+    setLiveStream(null)
     mediaRecorderRef.current = null
 
     const chunks = chunksRef.current
@@ -400,7 +413,7 @@ export default function MemoriasPage() {
             )}
           </AnimatePresence>
 
-          <AudioWaves active={recording} />
+          <AudioWaves active={recording} stream={liveStream} />
 
           {!processing && (
             <MicButton recording={recording} onClick={handleMicClick} disabled={processing || finalizing} />
