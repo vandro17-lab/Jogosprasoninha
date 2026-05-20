@@ -7,6 +7,9 @@ import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
 import { getSession, saveSession } from '@/lib/session-store'
 
+const MAX_DURATION = 120 // 2 minutos
+const WARN_AT = 90      // aviso aos 30s restantes
+
 export default function MemoriasPage() {
   const router = useRouter()
   const [recording, setRecording] = useState(false)
@@ -16,6 +19,7 @@ export default function MemoriasPage() {
   const [memoriesCount, setMemoriesCount] = useState(0)
   const [error, setError] = useState('')
   const [finalizing, setFinalizing] = useState(false)
+  const [audioSaved, setAudioSaved] = useState(false) // fallback: áudio salvo sem transcrição
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -30,6 +34,11 @@ export default function MemoriasPage() {
     setMemoriesCount(session.memories?.length ?? 0)
   }, [])
 
+  // Auto-para ao atingir 2 minutos
+  useEffect(() => {
+    if (recording && elapsed >= MAX_DURATION) stopRecording()
+  }, [elapsed, recording])
+
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
   }, [])
@@ -37,6 +46,7 @@ export default function MemoriasPage() {
   const startRecording = useCallback(async () => {
     setError('')
     setAiResponse(null)
+    setAudioSaved(false)
     chunksRef.current = []
 
     let stream: MediaStream
@@ -57,7 +67,6 @@ export default function MemoriasPage() {
 
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
     mediaRecorderRef.current = recorder
-
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.start(1000)
 
@@ -90,18 +99,26 @@ export default function MemoriasPage() {
 
     setProcessing(true)
     try {
-      // 1. Transcrever com Whisper
+      // 1. Transcrever com Groq Whisper (com retry automático no servidor)
       const form = new FormData()
       form.append('audio', blob, `audio.${ext}`)
       const transcribeRes = await fetch('/api/transcribe', { method: 'POST', body: form })
-      const { transcript } = await transcribeRes.json()
+      const transcribeData = await transcribeRes.json()
 
-      if (!transcript?.trim()) {
-        setError('Não consegui entender. Tente falar mais devagar e perto do microfone 😊')
+      // Fallback: se transcrição falhou, salvar áudio bruto no Supabase
+      if (transcribeData.failed || !transcribeData.transcript?.trim()) {
+        const currentSession = getSession()
+        const fallbackForm = new FormData()
+        fallbackForm.append('file', blob, `audio.${ext}`)
+        fallbackForm.append('participantId', currentSession.participantId ?? '')
+        fallbackForm.append('tipo', 'memoria_pendente')
+        await fetch('/api/upload-audio', { method: 'POST', body: fallbackForm })
+        setAudioSaved(true)
         setProcessing(false)
         return
       }
 
+      const transcript = transcribeData.transcript
       const currentSession = getSession()
 
       // 2. Salvar memória bruta
@@ -164,6 +181,7 @@ export default function MemoriasPage() {
     }
   }
 
+  const remaining = MAX_DURATION - elapsed
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
@@ -184,7 +202,7 @@ export default function MemoriasPage() {
           className="rounded-3xl p-8 flex flex-col items-center gap-6"
           style={{ background: '#FFFDF9', border: '1px solid #E8D5A3' }}
         >
-          {!recording && !processing && !aiResponse && (
+          {!recording && !processing && !aiResponse && !audioSaved && (
             <div className="text-center animate-fade-in">
               <p className="font-playfair text-xl text-text-dark">
                 {memoriesCount === 0
@@ -203,12 +221,29 @@ export default function MemoriasPage() {
             <div className="text-center animate-fade-in">
               <p className="text-text-muted text-sm">Estou ouvindo…</p>
               <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
+              {elapsed >= WARN_AT && (
+                <p className="text-amber-500 text-xs mt-1 animate-fade-in">
+                  {remaining}s restantes
+                </p>
+              )}
             </div>
           )}
 
           {processing && (
             <div className="text-center animate-fade-in">
               <p className="text-text-muted text-sm">Transcrevendo sua lembrança…</p>
+            </div>
+          )}
+
+          {/* Fallback: áudio salvo sem transcrição */}
+          {audioSaved && !recording && !processing && (
+            <div className="w-full text-center animate-fade-in">
+              <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
+                <p className="text-text-dark text-sm leading-relaxed">
+                  Sua gravação foi salva com carinho 🤍<br />
+                  <span className="text-text-muted text-xs">Assim que possível ela será processada.</span>
+                </p>
+              </div>
             </div>
           )}
 
