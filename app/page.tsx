@@ -12,7 +12,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
-      {/* Fundo suave com confetes fixos */}
+      {/* Fundo suave */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at top, #F0E8D8 0%, #FAF7F2 65%)' }}
@@ -36,13 +36,12 @@ export default function Home() {
           style={{ background: 'linear-gradient(135deg, #C9A84C22 0%, #E8D5A344 100%)', border: '1px solid #C9A84C55', color: '#A07830' }}
         >
           <span>🎂</span>
-          <span>59 anos da Sônia</span>
+          <span>59 anos da Sônia ✨</span>
           <span>🎂</span>
         </div>
 
         {/* Foto da Sônia */}
         <div className="relative">
-          {/* Anel dourado decorativo externo */}
           <div
             className="absolute -inset-2 rounded-full opacity-40"
             style={{ background: 'conic-gradient(from 0deg, #C9A84C, #E8D5A3, #C9A84C, #A07830, #C9A84C)' }}
@@ -76,7 +75,7 @@ export default function Home() {
         {/* Título */}
         <div className="text-center mt-2">
           <p className="font-playfair text-2xl text-text-dark leading-snug">
-            Uma surpresa especial
+            Uma surpresa feita com carinho
           </p>
           <p className="text-gold font-playfair text-lg mt-1">para a Sônia 🌸</p>
         </div>
@@ -90,20 +89,19 @@ export default function Home() {
             Oi 😊
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            Estamos preparando uma surpresa muito especial para a <strong>Soninha</strong>.
+            Estamos preparando algo muito especial para celebrar a vida da <strong>Soninha</strong>.
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            Infelizmente não conseguiremos fazer uma festa 😔<br />
-            Mas não queríamos deixar essa data passar em branco.
+            Este ano talvez não consigamos reunir todo mundo em uma festa… Mas não queríamos deixar essa data passar sem carinho 🤍
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            Então tivemos uma ideia muito especial: criar um <strong>mural virtual</strong> cheio de lembranças, fotos, mensagens e áudios de pessoas que fazem parte da história dela 🤍
+            Então tivemos uma ideia: criar um <strong>mural de lembranças</strong> com fotos, mensagens e áudios das pessoas que fazem parte da vida dela.
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            A ideia é guardar pequenos momentos, histórias e carinhos que marcaram a vida da Sônia.
+            Um espaço para guardar momentos, histórias e pequenos pedaços de amor que marcaram sua história ✨
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            E gostaríamos muito que você fizesse parte disso.
+            E seria muito especial ter você com a gente nisso.
           </p>
 
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E8D5A3' }}>
@@ -111,24 +109,23 @@ export default function Home() {
             <ul className="flex flex-col gap-2">
               <li className="flex items-start gap-2 text-sm text-text-dark">
                 <span className="text-gold mt-0.5">🎙️</span>
-                <span>contar algumas lembranças sobre a Sônia</span>
+                <span>compartilhar uma lembrança da Sônia</span>
               </li>
               <li className="flex items-start gap-2 text-sm text-text-dark">
                 <span className="text-gold mt-0.5">📷</span>
-                <span>enviar fotos antigas ou atuais</span>
+                <span>enviar fotos antigas ou recentes</span>
               </li>
               <li className="flex items-start gap-2 text-sm text-text-dark">
                 <span className="text-gold mt-0.5">🎵</span>
-                <span>e até deixar um áudio para ela ouvir no aniversário 😊</span>
+                <span>gravar um áudio para ela ouvir no aniversário</span>
               </li>
             </ul>
           </div>
 
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E8D5A3' }}>
-            <p className="text-text-muted text-sm">Vai ser rapidinho.</p>
-            <p className="text-text-dark text-sm mt-1">
-              Pode falar do seu jeito mesmo.<br />
-              Depois o sistema organiza tudo para você.
+            <p className="text-text-dark text-sm">
+              Pode falar do seu jeito, sem preocupação 😊<br />
+              Nós vamos organizar tudo com carinho para você.
             </p>
           </div>
         </div>
@@ -142,7 +139,7 @@ export default function Home() {
             boxShadow: '0 4px 20px rgba(201,168,76,0.4)',
           }}
         >
-          Participar da surpresa 🎉
+          Participar dessa surpresa 🤍
         </button>
 
         {showToast && (
@@ -153,7 +150,7 @@ export default function Home() {
         )}
 
         <p className="text-text-muted text-xs text-center">
-          Suas lembranças ficarão guardadas com muito carinho 🤍
+          Suas lembranças serão guardadas com muito carinho ✨
         </p>
 
         <div
@@ -162,7 +159,7 @@ export default function Home() {
         >
           <span className="text-xl shrink-0">🤫</span>
           <p className="text-xs text-text-muted leading-relaxed">
-            <strong className="text-text-dark">É surpresa!</strong> Por favor, não comente nada com a Sônia antes do aniversário 🤍
+            <strong className="text-text-dark">É surpresa!</strong> Se puder, não comente nada com a Sônia antes do aniversário 😊
           </p>
         </div>
       </div>

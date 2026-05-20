@@ -8,17 +8,6 @@ import Toast from '@/components/Toast'
 import { findFamilyMember } from '@/lib/family-members'
 import { saveSession } from '@/lib/session-store'
 
-const FEMININO = ['filha', 'irmã', 'amiga', 'sobrinha', 'prima', 'pastora', 'nora', 'madrinha', 'avó', 'tia', 'mãe']
-const AMADOS = ['filho', 'filha', 'irmão', 'irmã']
-
-function buildWelcomeToast(nome: string, parentesco: string): string {
-  const p = parentesco.toLowerCase()
-  const isFem = FEMININO.includes(p)
-  const isAmado = AMADOS.includes(p)
-  const artigo = isFem ? 'A' : 'O'
-  const adjetivo = isAmado ? (isFem ? 'amada' : 'amado') : (isFem ? 'querida' : 'querido')
-  return `Que bom ter você aqui, ${nome}! ${artigo} ${parentesco} ${adjetivo} que não podia faltar nesta homenagem. 🤍`
-}
 
 function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -69,7 +58,7 @@ export default function IdentificacaoPage() {
       })
       const data = await res.json()
       saveSession({ participantId: data.id, nome: nome.trim(), parentesco, telefone, memories: [], memoriaFinal: '' })
-      setToastMsg(buildWelcomeToast(nome.trim(), parentesco))
+      setToastMsg(`Que alegria ter você aqui, ${nome.trim()} 🤍\n\nSua lembrança vai fazer parte dessa homenagem tão especial para a Sônia ✨`)
     } catch {
       setError('Algo deu errado. Tente de novo 😊')
     } finally {
@@ -89,8 +78,8 @@ export default function IdentificacaoPage() {
       <div className="max-w-sm w-full flex flex-col gap-6 animate-fade-in">
         <div className="text-center">
           <ProgressDots total={5} current={0} />
-          <h1 className="font-playfair text-2xl text-text-dark mt-4">Olá 😊</h1>
-          <p className="text-text-muted text-sm mt-1">Antes de começar, como posso te chamar?</p>
+          <h1 className="font-playfair text-2xl text-text-dark mt-4">Que bom ter você aqui 😊</h1>
+          <p className="text-text-muted text-sm mt-1">Antes de começarmos… como a Sônia te conhece?</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -156,6 +145,7 @@ export default function IdentificacaoPage() {
               className="w-full bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
               inputMode="numeric"
             />
+            <p className="text-text-muted text-xs mt-2">Caso precisemos falar com você 😊</p>
           </div>
 
           {error && (
@@ -171,7 +161,7 @@ export default function IdentificacaoPage() {
               boxShadow: '0 4px 20px rgba(201,168,76,0.35)',
             }}
           >
-            {loading ? 'Aguarde...' : 'Continuar'}
+            {loading ? 'Aguarde...' : 'Continuar ✨'}
           </button>
         </form>
       </div>

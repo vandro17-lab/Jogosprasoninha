@@ -15,9 +15,9 @@ type Step = 'idle' | 'transcribing' | 'correcting' | 'thinking'
 
 const STEP_MSG: Record<Step, string> = {
   idle: '',
-  transcribing: 'Transcrevendo sua voz…',
-  correcting: 'Corrigindo o texto…',
-  thinking: 'Pensando na resposta…',
+  transcribing: 'Organizando sua lembrança…',
+  correcting: 'Transformando suas palavras com carinho ✨',
+  thinking: 'Sua mensagem está ficando linda 😊',
 }
 
 export default function MemoriasPage() {
@@ -26,7 +26,7 @@ export default function MemoriasPage() {
   const [step, setStep] = useState<Step>('idle')
   const [aiResponse, setAiResponse] = useState<string | null>(null)
   const [isQuestion, setIsQuestion] = useState(false)
-  const [shownTranscript, setShownTranscript] = useState('') // texto corrigido que o usuário vê
+  const [shownTranscript, setShownTranscript] = useState('')
   const [pendingTranscript, setPendingTranscript] = useState('')
   const [answerText, setAnswerText] = useState('')
   const [elapsed, setElapsed] = useState(0)
@@ -126,7 +126,6 @@ export default function MemoriasPage() {
 
     setStep('transcribing')
     try {
-      // 1. Transcrever com Groq Whisper
       addLog('Chamando Groq Whisper...')
       const form = new FormData()
       form.append('audio', blob, `audio.${ext}`)
@@ -135,7 +134,6 @@ export default function MemoriasPage() {
       addLog(`Groq: status=${transcribeRes.status} failed=${transcribeData.failed ?? false} text="${transcribeData.transcript?.slice(0, 60) ?? ''}" err="${transcribeData.error ?? ''}"`)
 
       if (transcribeData.failed || !transcribeData.transcript?.trim()) {
-        // Fallback: salvar áudio bruto
         addLog('Transcrição falhou — salvando áudio pendente...')
         const cs = getSession()
         const fbForm = new FormData()
@@ -155,7 +153,6 @@ export default function MemoriasPage() {
 
       const rawTranscript = transcribeData.transcript.trim()
 
-      // 2. Corrigir erros fonéticos
       setStep('correcting')
       addLog(`Corrigindo: "${rawTranscript.slice(0, 60)}"`)
       let corrected = rawTranscript
@@ -172,19 +169,16 @@ export default function MemoriasPage() {
         addLog(`Correção falhou (usando original): ${err}`)
       }
 
-      // Mostra o texto corrigido para o usuário
       setShownTranscript(corrected)
 
       const cs = getSession()
 
-      // 3. Salvar memória bruta (texto já corrigido)
       await fetch('/api/save-memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ participantId: cs.participantId, memoriaBreita: corrected }),
       })
 
-      // 4. Resposta rápida do Gemini
       setStep('thinking')
       addLog('Chamando OpenRouter (quick)...')
       const res = await fetch('/api/generate-final', {
@@ -203,7 +197,6 @@ export default function MemoriasPage() {
         return
       }
 
-      // 5. Salvar memória na sessão
       const updated = [...(cs.memories ?? []), corrected]
       saveSession({ memories: updated })
       setMemoriesCount(updated.length)
@@ -280,7 +273,6 @@ export default function MemoriasPage() {
     }
   }
 
-  const remaining = MAX_DURATION - elapsed
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
@@ -304,12 +296,12 @@ export default function MemoriasPage() {
           {!recording && step === 'idle' && !aiResponse && !audioSaved && (
             <div className="text-center animate-fade-in">
               <p className="font-playfair text-xl text-text-dark">
-                {memoriesCount === 0 ? `Perfeito${session.nome ? `, ${session.nome}` : ''} 😊` : 'Mais uma? 😊'}
+                {memoriesCount === 0 ? `Perfeito${session.nome ? `, ${session.nome}` : ''} 😊` : 'Mais uma lembrança? 😊'}
               </p>
               <p className="text-text-muted text-sm mt-2 leading-relaxed whitespace-pre-line">
                 {memoriesCount === 0
-                  ? 'Agora é só tocar no microfone e contar uma lembrança da Sônia.\n\nPode falar do seu jeito mesmo.'
-                  : 'Toque no microfone para contar mais uma lembrança.'}
+                  ? 'Agora toque no microfone e conte uma lembrança da Sônia.\n\nPode ser uma história simples… um momento engraçado… algo que marcou vocês ✨\n\nFale do seu jeito 🤍'
+                  : 'Cada memória deixa essa surpresa ainda mais especial ✨'}
               </p>
             </div>
           )}
@@ -317,10 +309,10 @@ export default function MemoriasPage() {
           {/* Gravando */}
           {recording && (
             <div className="text-center animate-fade-in">
-              <p className="text-text-muted text-sm">Estou ouvindo…</p>
+              <p className="text-text-muted text-sm">🎙️ Estou te ouvindo…</p>
               <p className="font-playfair text-3xl text-gold mt-1">{formatTime(elapsed)}</p>
               {elapsed >= WARN_AT && (
-                <p className="text-amber-500 text-xs mt-1">{remaining}s restantes</p>
+                <p className="text-amber-500 text-xs mt-1">✨ Últimos 30 segundos</p>
               )}
             </div>
           )}
@@ -355,7 +347,6 @@ export default function MemoriasPage() {
           {/* Texto corrigido + resposta da IA */}
           {aiResponse && !recording && step === 'idle' && (
             <div className="w-full animate-fade-in flex flex-col gap-3">
-              {/* Texto que foi entendido */}
               {shownTranscript && (
                 <div className="rounded-xl px-4 py-2" style={{ background: '#F7F3EC' }}>
                   <p className="text-text-muted text-xs mb-1">Entendi assim:</p>
@@ -363,14 +354,12 @@ export default function MemoriasPage() {
                 </div>
               )}
 
-              {/* Resposta ou pergunta */}
               <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
                 <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line text-center">
                   {aiResponse}
                 </p>
               </div>
 
-              {/* Campo de resposta se for pergunta */}
               {isQuestion && (
                 <div className="flex flex-col gap-2 mt-1">
                   <textarea
@@ -420,18 +409,14 @@ export default function MemoriasPage() {
           className="w-full py-4 rounded-2xl font-medium text-gold-dark text-base transition-all duration-200 active:scale-98 disabled:opacity-40"
           style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
         >
-          {finalizing ? 'Preparando sua mensagem…' : 'Finalizar ✓'}
+          {finalizing ? 'Preparando sua mensagem…' : 'Finalizar lembranças ✓'}
         </button>
 
         {memoriesCount === 0 && (
           <p className="text-text-muted text-xs text-center">
-            Grave pelo menos uma lembrança para finalizar
+            Grave pelo menos uma lembrança para continuar 😊
           </p>
         )}
-
-        <a href="/debug" className="text-center text-text-muted/40 text-xs mt-1">
-          ver log de erros
-        </a>
       </div>
     </main>
   )

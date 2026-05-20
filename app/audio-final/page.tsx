@@ -88,13 +88,13 @@ export default function AudioFinalPage() {
         <div className="text-center">
           <ProgressDots total={5} current={4} />
           <h1 className="font-playfair text-xl text-text-dark mt-4">
-            Um áudio para a Sônia 😊
+            Deixe um recado para a Sônia 🎙️
           </h1>
           <p className="text-text-muted text-sm mt-1 leading-relaxed">
-            Ela vai ouvir isso no aniversário.
+            Ela vai ouvir essa mensagem no aniversário 🤍
           </p>
           <p className="text-xs text-text-muted mt-2">
-            Como é surpresa, tente não comentar com ela 🤍
+            Pode falar algo simples… um carinho, uma saudade, um desejo bonito 😊
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export default function AudioFinalPage() {
 
           {state === 'recording' && (
             <>
-              <p className="text-text-muted text-sm">Gravando…</p>
+              <p className="text-text-muted text-sm">🎙️ Gravando…</p>
               <p className="font-playfair text-3xl text-gold">{formatTime(elapsed)}</p>
               <AudioWaves active={true} />
               <button
@@ -136,13 +136,13 @@ export default function AudioFinalPage() {
               >
                 <div className="w-7 h-7 rounded bg-white" />
               </button>
-              <p className="text-text-muted text-xs">Toque para parar</p>
+              <p className="text-text-muted text-xs">Toque para finalizar</p>
             </>
           )}
 
           {state === 'preview' && audioUrl && (
             <>
-              <p className="text-text-muted text-sm text-center">Ouça antes de enviar 😊</p>
+              <p className="text-text-muted text-sm text-center">Ouça com calma antes de enviar 😊</p>
               <audio controls src={audioUrl} className="w-full rounded-xl" />
               <div className="flex gap-3 w-full">
                 <button
@@ -150,7 +150,7 @@ export default function AudioFinalPage() {
                   className="flex-1 py-3 rounded-2xl text-text-dark text-sm font-medium transition-all duration-200 active:scale-98"
                   style={{ background: '#F0E8D8', border: '1px solid #E8D5A3' }}
                 >
-                  Regravar
+                  Gravar novamente
                 </button>
                 <button
                   onClick={sendAudio}

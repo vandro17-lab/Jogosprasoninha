@@ -51,7 +51,7 @@ export default function Toast({ message, duration = 2600, onDone }: ToastProps) 
           animation: `toast-enter ${duration}ms cubic-bezier(0.34,1.4,0.64,1) forwards`,
         }}
       >
-        <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.6' }}>{message}</p>
+        <p style={{ color: '#3D3228', fontSize: '1rem', lineHeight: '1.6', whiteSpace: 'pre-line' }}>{message}</p>
       </div>
     </div>,
     document.body
