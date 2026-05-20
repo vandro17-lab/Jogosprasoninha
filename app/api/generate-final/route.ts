@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       })
     }
     try {
-      const result = await quickResponse(body.transcript, body.nome ?? '')
+      const result = await quickResponse(body.transcript, body.nome ?? '', body.parentesco ?? '')
       return NextResponse.json({ isQuestion: result.isQuestion, response: result.text })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
