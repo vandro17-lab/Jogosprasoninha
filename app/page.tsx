@@ -80,21 +80,54 @@ export default function Home() {
 
         {/* Texto principal */}
         <div
-          className="w-full rounded-3xl p-6 text-center"
+          className="w-full rounded-3xl p-6"
           style={{ background: 'rgba(255,253,249,0.9)', backdropFilter: 'blur(8px)', border: '1px solid #E8D5A3', boxShadow: '0 4px 24px rgba(201,168,76,0.08)' }}
         >
           <p className="text-text-dark leading-relaxed text-base">
-            Estamos preparando uma surpresa muito especial para os <strong>59 anos da Sônia</strong> 😊
+            Oi 😊
           </p>
           <p className="text-text-dark leading-relaxed text-base mt-3">
-            Queremos guardar lembranças, histórias e momentos importantes de pessoas que fizeram parte da vida dela.
+            Estamos preparando uma surpresa muito especial para a <strong>Soninha</strong>.
           </p>
-          <div className="flex justify-center gap-2 my-4 text-xl">
-            <span>🌸</span><span>🎂</span><span>🌸</span>
+          <p className="text-text-dark leading-relaxed text-base mt-3">
+            Infelizmente não conseguiremos fazer uma festa 😔<br />
+            Mas não queríamos deixar essa data passar em branco.
+          </p>
+          <p className="text-text-dark leading-relaxed text-base mt-3">
+            Então tivemos uma ideia muito especial: criar um <strong>mural virtual</strong> cheio de lembranças, fotos, mensagens e áudios de pessoas que fazem parte da história dela 🤍
+          </p>
+          <p className="text-text-dark leading-relaxed text-base mt-3">
+            A ideia é guardar pequenos momentos, histórias e carinhos que marcaram a vida da Sônia.
+          </p>
+          <p className="text-text-dark leading-relaxed text-base mt-3">
+            E gostaríamos muito que você fizesse parte disso.
+          </p>
+
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E8D5A3' }}>
+            <p className="text-text-muted text-sm font-medium mb-2">Nos próximos passos, você poderá:</p>
+            <ul className="flex flex-col gap-2">
+              <li className="flex items-start gap-2 text-sm text-text-dark">
+                <span className="text-gold mt-0.5">🎙️</span>
+                <span>contar algumas lembranças sobre a Sônia</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-text-dark">
+                <span className="text-gold mt-0.5">📷</span>
+                <span>enviar fotos antigas ou atuais</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-text-dark">
+                <span className="text-gold mt-0.5">🎵</span>
+                <span>e até deixar um áudio para ela ouvir no aniversário 😊</span>
+              </li>
+            </ul>
           </div>
-          <p className="text-text-muted text-sm">
-            Vai ser rapidinho. Você só precisa falar do seu jeito — depois o sistema organiza tudo para você.
-          </p>
+
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid #E8D5A3' }}>
+            <p className="text-text-muted text-sm">Vai ser rapidinho.</p>
+            <p className="text-text-dark text-sm mt-1">
+              Pode falar do seu jeito mesmo.<br />
+              Depois o sistema organiza tudo para você.
+            </p>
+          </div>
         </div>
 
         {/* Botão */}
