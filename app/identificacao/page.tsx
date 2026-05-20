@@ -4,8 +4,21 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import RelationSelector from '@/components/RelationSelector'
 import ProgressDots from '@/components/ProgressDots'
+import Toast from '@/components/Toast'
 import { findFamilyMember } from '@/lib/family-members'
 import { saveSession } from '@/lib/session-store'
+
+const FEMININO = ['filha', 'irmã', 'amiga', 'sobrinha', 'prima', 'pastora', 'nora', 'madrinha', 'avó', 'tia', 'mãe']
+const AMADOS = ['filho', 'filha', 'irmão', 'irmã']
+
+function buildWelcomeToast(nome: string, parentesco: string): string {
+  const p = parentesco.toLowerCase()
+  const isFem = FEMININO.includes(p)
+  const isAmado = AMADOS.includes(p)
+  const artigo = isFem ? 'A' : 'O'
+  const adjetivo = isAmado ? (isFem ? 'amada' : 'amado') : (isFem ? 'querida' : 'querido')
+  return `Que bom ter você aqui, ${nome}! ${artigo} ${parentesco} ${adjetivo} que não podia faltar nesta homenagem. 🤍`
+}
 
 function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -22,6 +35,7 @@ export default function IdentificacaoPage() {
   const [showSelector, setShowSelector] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [toastMsg, setToastMsg] = useState('')
 
   useEffect(() => {
     if (nome.trim().length >= 2) {
@@ -55,7 +69,7 @@ export default function IdentificacaoPage() {
       })
       const data = await res.json()
       saveSession({ participantId: data.id, nome: nome.trim(), parentesco, telefone, memories: [], memoriaFinal: '' })
-      router.push('/memorias')
+      setToastMsg(buildWelcomeToast(nome.trim(), parentesco))
     } catch {
       setError('Algo deu errado. Tente de novo 😊')
     } finally {
@@ -65,6 +79,13 @@ export default function IdentificacaoPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+      {toastMsg && (
+        <Toast
+          message={toastMsg}
+          duration={3000}
+          onDone={() => router.push('/memorias')}
+        />
+      )}
       <div className="max-w-sm w-full flex flex-col gap-6 animate-fade-in">
         <div className="text-center">
           <ProgressDots total={5} current={0} />

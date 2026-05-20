@@ -1,11 +1,14 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Toast from '@/components/Toast'
 
 export default function Home() {
+  const router = useRouter()
   const [imgError, setImgError] = useState(false)
+  const [showToast, setShowToast] = useState(false)
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
@@ -131,8 +134,8 @@ export default function Home() {
         </div>
 
         {/* Botão */}
-        <Link
-          href="/identificacao"
+        <button
+          onClick={() => setShowToast(true)}
           className="w-full py-4 rounded-2xl text-center font-medium text-white text-lg transition-all duration-200 active:scale-98 shadow-lg"
           style={{
             background: 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
@@ -140,7 +143,14 @@ export default function Home() {
           }}
         >
           Participar da surpresa 🎉
-        </Link>
+        </button>
+
+        {showToast && (
+          <Toast
+            message="Ela vai amar ler a sua mensagem! 🌸"
+            onDone={() => router.push('/identificacao')}
+          />
+        )}
 
         <p className="text-text-muted text-xs text-center">
           Suas lembranças ficarão guardadas com muito carinho 🤍
