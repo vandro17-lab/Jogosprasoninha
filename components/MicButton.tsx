@@ -7,11 +7,29 @@ interface MicButtonProps {
   recording: boolean
   onClick: () => void
   disabled?: boolean
+  size?: number
 }
 
-export default function MicButton({ recording, onClick, disabled }: MicButtonProps) {
+export default function MicButton({ recording, onClick, disabled, size = 84 }: MicButtonProps) {
+  const ringColor = recording ? 'rgba(200, 76, 76, 0.25)' : 'rgba(201, 168, 76, 0.22)'
+  const ringColor2 = recording ? 'rgba(200, 76, 76, 0.18)' : 'rgba(201, 168, 76, 0.16)'
+
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center" style={{ width: size + 16, height: size + 16 }}>
+      {/* Ambient glow base (always-on subtle aura) */}
+      <div
+        aria-hidden
+        className="absolute rounded-full"
+        style={{
+          width: size + 32,
+          height: size + 32,
+          background: recording
+            ? 'radial-gradient(circle, rgba(200,76,76,0.18) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(201,168,76,0.20) 0%, transparent 70%)',
+          filter: 'blur(8px)',
+        }}
+      />
+
       {/* Expanding rings when recording */}
       <AnimatePresence>
         {recording && (
@@ -23,10 +41,10 @@ export default function MicButton({ recording, onClick, disabled }: MicButtonPro
               transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
               style={{
                 position: 'absolute',
-                width: 80,
-                height: 80,
+                width: size,
+                height: size,
                 borderRadius: '50%',
-                background: 'rgba(200, 76, 76, 0.25)',
+                background: ringColor,
               }}
             />
             <motion.div
@@ -36,28 +54,45 @@ export default function MicButton({ recording, onClick, disabled }: MicButtonPro
               transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
               style={{
                 position: 'absolute',
-                width: 80,
-                height: 80,
+                width: size,
+                height: size,
                 borderRadius: '50%',
-                background: 'rgba(200, 76, 76, 0.20)',
+                background: ringColor2,
               }}
             />
           </>
         )}
       </AnimatePresence>
 
+      {/* Outer gold/rose trim ring */}
+      <div
+        aria-hidden
+        className="absolute rounded-full"
+        style={{
+          width: size + 6,
+          height: size + 6,
+          border: recording
+            ? '1.5px solid rgba(232, 200, 200, 0.55)'
+            : '1.5px solid rgba(232, 213, 163, 0.65)',
+          boxShadow: recording
+            ? 'inset 0 0 12px rgba(200, 76, 76, 0.10)'
+            : 'inset 0 0 12px rgba(201, 168, 76, 0.10)',
+        }}
+      />
+
       <motion.button
         onClick={onClick}
         disabled={disabled}
         whileHover={disabled ? {} : { scale: 1.06 }}
-        whileTap={disabled ? {} : { scale: 0.90 }}
+        whileTap={disabled ? {} : { scale: 0.92 }}
         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         aria-label={recording ? 'Parar gravação' : 'Iniciar gravação'}
+        className="focus-ring"
         style={{
           position: 'relative',
           zIndex: 10,
-          width: 80,
-          height: 80,
+          width: size,
+          height: size,
           borderRadius: '50%',
           border: 'none',
           display: 'flex',
@@ -66,13 +101,25 @@ export default function MicButton({ recording, onClick, disabled }: MicButtonPro
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           background: recording
-            ? 'linear-gradient(135deg, #C84C4C 0%, #A03030 100%)'
-            : 'linear-gradient(135deg, #C9A84C 0%, #A07830 100%)',
+            ? 'linear-gradient(150deg, #D45C5C 0%, #C84C4C 45%, #9A2828 100%)'
+            : 'linear-gradient(150deg, #D9B95C 0%, #C9A84C 45%, #8E6A24 100%)',
           boxShadow: recording
-            ? '0 6px 24px rgba(200, 76, 76, 0.45)'
-            : '0 6px 24px rgba(201, 168, 76, 0.45)',
+            ? '0 1px 0 rgba(255,255,255,0.35) inset, 0 4px 14px rgba(200, 76, 76, 0.42), 0 14px 36px -6px rgba(200, 76, 76, 0.45)'
+            : '0 1px 0 rgba(255,255,255,0.45) inset, 0 4px 14px rgba(201, 168, 76, 0.42), 0 14px 36px -6px rgba(201, 168, 76, 0.48)',
         }}
       >
+        {/* Inner glossy highlight */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 4,
+            borderRadius: '50%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.08) 35%, transparent 55%)',
+            pointerEvents: 'none',
+          }}
+        />
+
         <AnimatePresence mode="wait">
           {recording ? (
             <motion.span
@@ -81,6 +128,7 @@ export default function MicButton({ recording, onClick, disabled }: MicButtonPro
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.6, opacity: 0 }}
               transition={{ duration: 0.2 }}
+              style={{ position: 'relative', zIndex: 2 }}
             >
               <Square size={28} color="white" fill="white" />
             </motion.span>
@@ -91,8 +139,9 @@ export default function MicButton({ recording, onClick, disabled }: MicButtonPro
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.6, opacity: 0 }}
               transition={{ duration: 0.2 }}
+              style={{ position: 'relative', zIndex: 2 }}
             >
-              <Mic2 size={30} color="white" />
+              <Mic2 size={32} color="white" strokeWidth={1.8} />
             </motion.span>
           )}
         </AnimatePresence>
