@@ -7,43 +7,6 @@ import AudioWaves from '@/components/AudioWaves'
 import ProgressDots from '@/components/ProgressDots'
 import { getSession, saveSession } from '@/lib/session-store'
 
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList
-}
-
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult
-  length: number
-}
-
-interface SpeechRecognitionResult {
-  [index: number]: SpeechRecognitionAlternative
-  isFinal: boolean
-  length: number
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string
-  confidence: number
-}
-
-interface SpeechRecognitionInstance extends EventTarget {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  start(): void
-  stop(): void
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: ((event: Event) => void) | null
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognitionInstance
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance
-  }
-}
-
 export default function MemoriasPage() {
   const router = useRouter()
   const [recording, setRecording] = useState(false)
@@ -53,104 +16,111 @@ export default function MemoriasPage() {
   const [memoriesCount, setMemoriesCount] = useState(0)
   const [error, setError] = useState('')
   const [finalizing, setFinalizing] = useState(false)
-  const [speechSupported, setSpeechSupported] = useState(true)
 
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const transcriptRef = useRef('')
+  const mimeTypeRef = useRef('audio/webm')
 
   const session = getSession()
 
   useEffect(() => {
     if (!session.nome) { router.replace('/identificacao'); return }
     setMemoriesCount(session.memories?.length ?? 0)
-
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) setSpeechSupported(false)
   }, [])
 
   const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
   }, [])
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback(async () => {
     setError('')
     setAiResponse(null)
-    transcriptRef.current = ''
+    chunksRef.current = []
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) {
-      setError('Seu navegador não suporta gravação de voz. Use o Chrome 😊')
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      setError('Não consegui acessar o microfone. Verifique as permissões 😊')
       return
     }
+    streamRef.current = stream
 
-    const recognition = new SR()
-    recognition.lang = 'pt-BR'
-    recognition.continuous = true
-    recognition.interimResults = false
+    const mimeType =
+      MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+      MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
+      MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' :
+      ''
+    mimeTypeRef.current = mimeType
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const results = Array.from(event.results)
-      transcriptRef.current = results
-        .filter((r) => r.isFinal)
-        .map((r) => r[0].transcript)
-        .join(' ')
-        .trim()
-    }
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
+    mediaRecorderRef.current = recorder
 
-    recognition.onerror = () => {
-      stopRecording()
-      setError('Não consegui ouvir. Tente de novo 😊')
-    }
-
-    recognition.start()
-    recognitionRef.current = recognition
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+    recorder.start(1000)
 
     setRecording(true)
     setElapsed(0)
     timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000)
-  }, [stopTimer])
+  }, [])
 
   const stopRecording = useCallback(async () => {
-    recognitionRef.current?.stop()
-    recognitionRef.current = null
     stopTimer()
     setRecording(false)
 
-    const transcript = transcriptRef.current
-    if (!transcript) {
+    const recorder = mediaRecorderRef.current
+    if (!recorder) return
+
+    await new Promise<void>((resolve) => { recorder.onstop = () => resolve(); recorder.stop() })
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    mediaRecorderRef.current = null
+
+    const chunks = chunksRef.current
+    if (!chunks.length) {
       setError('Não ouvi nada. Tente falar mais perto do microfone 😊')
       return
     }
 
+    const mimeType = mimeTypeRef.current || 'audio/webm'
+    const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm'
+    const blob = new Blob(chunks, { type: mimeType })
+
     setProcessing(true)
     try {
-      const session = getSession()
+      // 1. Transcrever com Whisper
+      const form = new FormData()
+      form.append('audio', blob, `audio.${ext}`)
+      const transcribeRes = await fetch('/api/transcribe', { method: 'POST', body: form })
+      const { transcript } = await transcribeRes.json()
 
-      // Salva memória bruta
+      if (!transcript?.trim()) {
+        setError('Não consegui entender. Tente falar mais devagar e perto do microfone 😊')
+        setProcessing(false)
+        return
+      }
+
+      const currentSession = getSession()
+
+      // 2. Salvar memória bruta
       await fetch('/api/save-memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantId: session.participantId, memoriaBreita: transcript }),
+        body: JSON.stringify({ participantId: currentSession.participantId, memoriaBreita: transcript }),
       })
 
-      // Pede resposta da IA
+      // 3. Resposta da IA
       const res = await fetch('/api/generate-final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'quick',
-          transcript,
-          nome: session.nome,
-        }),
+        body: JSON.stringify({ action: 'quick', transcript, nome: currentSession.nome }),
       })
       const data = await res.json()
 
-      // Atualiza sessão com nova memória
-      const updatedMemories = [...(session.memories ?? []), transcript]
+      // 4. Atualizar sessão
+      const updatedMemories = [...(currentSession.memories ?? []), transcript]
       saveSession({ memories: updatedMemories })
       setMemoriesCount(updatedMemories.length)
       setAiResponse(data.response ?? 'Que lembrança bonita 😊')
@@ -162,16 +132,13 @@ export default function MemoriasPage() {
   }, [stopTimer])
 
   const handleMicClick = useCallback(() => {
-    if (recording) {
-      stopRecording()
-    } else {
-      startRecording()
-    }
+    if (recording) stopRecording()
+    else startRecording()
   }, [recording, startRecording, stopRecording])
 
   async function handleFinalize() {
-    const session = getSession()
-    if (!session.memories?.length) {
+    const currentSession = getSession()
+    if (!currentSession.memories?.length) {
       setError('Conta pelo menos uma lembrança antes de finalizar 😊')
       return
     }
@@ -182,10 +149,10 @@ export default function MemoriasPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'final',
-          participantId: session.participantId,
-          nome: session.nome,
-          parentesco: session.parentesco,
-          memories: session.memories,
+          participantId: currentSession.participantId,
+          nome: currentSession.nome,
+          parentesco: currentSession.parentesco,
+          memories: currentSession.memories,
         }),
       })
       const data = await res.json()
@@ -197,7 +164,8 @@ export default function MemoriasPage() {
     }
   }
 
-  const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const formatTime = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
     <main className="min-h-screen flex flex-col px-6 py-10">
@@ -240,18 +208,14 @@ export default function MemoriasPage() {
 
           {processing && (
             <div className="text-center animate-fade-in">
-              <p className="text-text-muted text-sm">Organizando sua lembrança…</p>
+              <p className="text-text-muted text-sm">Transcrevendo sua lembrança…</p>
             </div>
           )}
 
           <AudioWaves active={recording} />
 
           {!processing && (
-            <MicButton
-              recording={recording}
-              onClick={handleMicClick}
-              disabled={processing || finalizing}
-            />
+            <MicButton recording={recording} onClick={handleMicClick} disabled={processing || finalizing} />
           )}
 
           {processing && (
@@ -260,10 +224,7 @@ export default function MemoriasPage() {
 
           {aiResponse && !recording && !processing && (
             <div className="w-full text-center animate-fade-in">
-              <div
-                className="rounded-2xl p-4"
-                style={{ background: '#F0E8D8' }}
-              >
+              <div className="rounded-2xl p-4" style={{ background: '#F0E8D8' }}>
                 <p className="text-text-dark text-sm leading-relaxed whitespace-pre-line">{aiResponse}</p>
               </div>
             </div>
@@ -271,12 +232,6 @@ export default function MemoriasPage() {
 
           {error && (
             <p className="text-red-400 text-sm text-center animate-fade-in">{error}</p>
-          )}
-
-          {!speechSupported && (
-            <p className="text-amber-600 text-xs text-center">
-              Use o Chrome para gravar voz 😊
-            </p>
           )}
         </div>
 
