@@ -125,6 +125,8 @@ export default function IdentificacaoPage() {
                 placeholder="Só seu primeiro nome"
                 className="flex-1 bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
                 autoComplete="given-name"
+                enterKeyHint="done"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLElement).blur() } }}
               />
               <UserRound size={24} color="#C9A84C" strokeWidth={1.5} />
             </div>
@@ -182,6 +184,8 @@ export default function IdentificacaoPage() {
               placeholder="(99) 99999-9999"
               className="w-full bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
               inputMode="numeric"
+              enterKeyHint="done"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLElement).blur() } }}
               style={{ position: 'relative', zIndex: 2 }}
             />
             <p className="text-text-muted text-xs mt-2" style={{ position: 'relative', zIndex: 2 }}>Caso precisemos falar com você 😊</p>
