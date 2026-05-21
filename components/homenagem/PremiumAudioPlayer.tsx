@@ -15,9 +15,39 @@ function fmt(t: number) {
 
 export default function PremiumAudioPlayer({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const durFixRef = useRef(false)
   const [playing, setPlaying] = useState(false)
   const [cur, setCur] = useState(0)
   const [dur, setDur] = useState(0)
+
+  // Gravações webm/opus do MediaRecorder costumam vir sem duração (Infinity).
+  // Força o cálculo "buscando" o fim e voltando ao início.
+  function handleLoadedMetadata(e: React.SyntheticEvent<HTMLAudioElement>) {
+    const a = e.currentTarget
+    if (isFinite(a.duration) && a.duration > 0) {
+      setDur(a.duration)
+    } else if (!durFixRef.current) {
+      durFixRef.current = true
+      try { a.currentTime = 1e101 } catch {}
+    }
+  }
+
+  function handleDurationChange(e: React.SyntheticEvent<HTMLAudioElement>) {
+    const a = e.currentTarget
+    if (isFinite(a.duration) && a.duration > 0) {
+      setDur(a.duration)
+      if (durFixRef.current && a.currentTime > a.duration - 1) {
+        durFixRef.current = false
+        a.currentTime = 0
+        setCur(0)
+      }
+    }
+  }
+
+  function handleTimeUpdate(e: React.SyntheticEvent<HTMLAudioElement>) {
+    if (durFixRef.current) return
+    setCur(e.currentTarget.currentTime)
+  }
 
   const bars = useMemo(
     () =>
@@ -78,8 +108,9 @@ export default function PremiumAudioPlayer({ src }: { src: string }) {
         ref={audioRef}
         src={src}
         preload="metadata"
-        onLoadedMetadata={(e) => setDur(e.currentTarget.duration)}
-        onTimeUpdate={(e) => setCur(e.currentTarget.currentTime)}
+        onLoadedMetadata={handleLoadedMetadata}
+        onDurationChange={handleDurationChange}
+        onTimeUpdate={handleTimeUpdate}
         onEnded={() => { setPlaying(false); setCur(0) }}
       />
 

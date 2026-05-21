@@ -3,24 +3,51 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, Square, Heart } from 'lucide-react'
+import { Mic, Square, Heart, Pause, Play, Sparkles } from 'lucide-react'
 import AudioWaves from '@/components/AudioWaves'
+import LiveWaveform from '@/components/LiveWaveform'
 import ProgressDots from '@/components/ProgressDots'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 import SectionTitle from '@/components/SectionTitle'
+import PremiumAudioPlayer from '@/components/homenagem/PremiumAudioPlayer'
 import { getSession } from '@/lib/session-store'
 
-type RecordState = 'idle' | 'recording' | 'preview' | 'uploading' | 'done'
+type RecordState = 'idle' | 'recording' | 'paused' | 'preview' | 'uploading' | 'done'
+
+const MAX_SECONDS = 300
 
 const itemVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } },
 }
-
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.10 } },
+  show: { transition: { staggerChildren: 0.1 } },
+}
+
+function pickMimeType() {
+  if (typeof MediaRecorder === 'undefined') return ''
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/ogg;codecs=opus',
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4',
+    'audio/webm',
+  ]
+  for (const c of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(c)) return c
+    } catch {}
+  }
+  return ''
+}
+
+function extFromMime(mime: string) {
+  if (mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac')) return 'm4a'
+  if (mime.includes('ogg')) return 'ogg'
+  if (mime.includes('webm')) return 'webm'
+  return 'webm'
 }
 
 export default function AudioFinalPage() {
@@ -29,11 +56,15 @@ export default function AudioFinalPage() {
   const [elapsed, setElapsed] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [participantId, setParticipantId] = useState<string | null>(null)
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const recordedBlobRef = useRef<Blob | null>(null)
+  const recordedMimeRef = useRef<string>('audio/webm')
 
   useEffect(() => {
     const s = getSession()
@@ -41,62 +72,143 @@ export default function AudioFinalPage() {
     setParticipantId(s.participantId)
   }, [])
 
+  function stopTimer() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+  }
+
+  function startTimer() {
+    stopTimer()
+    timerRef.current = setInterval(() => {
+      setElapsed((s) => {
+        const n = s + 1
+        if (n >= MAX_SECONDS) stopRecording()
+        return n
+      })
+    }, 1000)
+  }
+
+  function closeAudioCtx() {
+    audioCtxRef.current?.close().catch(() => {})
+    audioCtxRef.current = null
+  }
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopTimer()
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      closeAudioCtx()
+      if (audioUrl) URL.revokeObjectURL(audioUrl)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000,
+        },
+      })
       streamRef.current = stream
       chunksRef.current = []
+      recordedBlobRef.current = null
 
-      const mr = new MediaRecorder(stream)
+      // live analyser
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      const audioCtx = new AC()
+      audioCtxRef.current = audioCtx
+      const source = audioCtx.createMediaStreamSource(stream)
+      const an = audioCtx.createAnalyser()
+      an.fftSize = 1024
+      an.smoothingTimeConstant = 0.78
+      source.connect(an)
+      setAnalyser(an)
+      audioCtx.resume().catch(() => {})
+
+      const mime = pickMimeType()
+      const opts: MediaRecorderOptions = { audioBitsPerSecond: 128000 }
+      if (mime) opts.mimeType = mime
+      const mr = new MediaRecorder(stream, opts)
+      recordedMimeRef.current = mr.mimeType || mime || 'audio/webm'
+
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const blob = new Blob(chunksRef.current, { type: recordedMimeRef.current })
+        recordedBlobRef.current = blob
         const url = URL.createObjectURL(blob)
         setAudioUrl(url)
         setState('preview')
         streamRef.current?.getTracks().forEach((t) => t.stop())
+        closeAudioCtx()
+        setAnalyser(null)
       }
 
       mr.start()
       mediaRecorderRef.current = mr
       setState('recording')
       setElapsed(0)
-      timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000)
+      startTimer()
     } catch {
       alert('Não foi possível acessar o microfone. Verifique as permissões 😊')
     }
   }
 
+  function togglePause() {
+    const mr = mediaRecorderRef.current
+    if (!mr) return
+    if (state === 'recording') {
+      mr.pause()
+      stopTimer()
+      setState('paused')
+    } else if (state === 'paused') {
+      mr.resume()
+      startTimer()
+      setState('recording')
+    }
+  }
+
   function stopRecording() {
-    mediaRecorderRef.current?.stop()
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    stopTimer()
+    try { mediaRecorderRef.current?.stop() } catch {}
   }
 
   function reRecord() {
     if (audioUrl) URL.revokeObjectURL(audioUrl)
     setAudioUrl(null)
+    recordedBlobRef.current = null
+    setElapsed(0)
     setState('idle')
   }
 
   async function sendAudio() {
-    if (!audioUrl) return
+    const blob = recordedBlobRef.current
+    if (!blob) return
     setState('uploading')
+    const mime = recordedMimeRef.current || 'audio/webm'
+    const ext = extFromMime(mime)
     try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
       const form = new FormData()
-      form.append('file', blob, 'audio-final.webm')
+      form.append('file', blob, `audio-final.${ext}`)
       form.append('participantId', participantId ?? 'unknown')
       form.append('tipo', 'final')
+      form.append('ext', ext)
       await fetch('/api/upload-audio', { method: 'POST', body: form })
     } catch {
-      // Upload failed silently, still proceed
+      // upload falhou silenciosamente, segue mesmo assim
     }
     setState('done')
-    setTimeout(() => router.push('/obrigado'), 800)
+    setTimeout(() => router.push('/obrigado'), 900)
   }
 
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+
+  const isRec = state === 'recording' || state === 'paused'
 
   return (
     <main className="min-h-screen flex flex-col px-6 py-12 relative overflow-hidden">
@@ -140,6 +252,16 @@ export default function AudioFinalPage() {
                     exit={{ opacity: 0, y: -8 }}
                     className="flex flex-col items-center gap-6 w-full"
                   >
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[0.68rem] font-medium"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(201,168,76,0.14), rgba(232,213,163,0.28))',
+                        border: '1px solid rgba(201,168,76,0.35)',
+                        color: '#A07830',
+                      }}
+                    >
+                      <Sparkles size={12} color="#C9A84C" /> Gravação em alta qualidade
+                    </span>
                     <p className="text-text-muted text-sm text-center">
                       Toque no botão para gravar uma mensagem de voz
                     </p>
@@ -148,27 +270,47 @@ export default function AudioFinalPage() {
                   </motion.div>
                 )}
 
-                {state === 'recording' && (
+                {isRec && (
                   <motion.div
                     key="recording"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="flex flex-col items-center gap-6 w-full"
+                    className="flex flex-col items-center gap-5 w-full"
                   >
                     <div className="flex items-center gap-2">
                       <motion.span
-                        animate={{ opacity: [1, 0.3, 1] }}
-                        transition={{ duration: 1.2, repeat: Infinity }}
+                        animate={state === 'recording' ? { opacity: [1, 0.3, 1] } : { opacity: 0.4 }}
+                        transition={{ duration: 1.2, repeat: state === 'recording' ? Infinity : 0 }}
                         className="inline-block w-2 h-2 rounded-full"
                         style={{ background: '#D85A5A', boxShadow: '0 0 8px rgba(216,90,90,0.7)' }}
                       />
-                      <p className="text-text-muted text-sm">Gravando…</p>
+                      <p className="text-text-muted text-sm">{state === 'paused' ? 'Pausado' : 'Gravando…'}</p>
                     </div>
-                    <p className="font-playfair text-4xl text-gradient-gold">{formatTime(elapsed)}</p>
-                    <AudioWaves active={true} />
+
+                    <p className="font-playfair text-4xl text-gradient-gold tabular-nums">{formatTime(elapsed)}</p>
+
+                    <div className="w-full">
+                      <LiveWaveform analyser={analyser} active={state === 'recording'} paused={state === 'paused'} />
+                    </div>
+
                     <PremiumRecordButton onClick={stopRecording} recording={true} />
-                    <p className="text-text-muted text-xs">Toque para finalizar</p>
+
+                    <button
+                      onClick={togglePause}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-text-dark focus-ring"
+                      style={{
+                        background: 'linear-gradient(180deg, rgba(255,253,249,0.9), rgba(240,232,216,0.65))',
+                        border: '1px solid rgba(232,213,163,0.65)',
+                        boxShadow: '0 1px 0 rgba(255,255,255,0.6) inset',
+                      }}
+                    >
+                      {state === 'paused'
+                        ? <><Play size={15} color="#A07830" fill="#A07830" /> Continuar</>
+                        : <><Pause size={15} color="#A07830" fill="#A07830" /> Pausar</>}
+                    </button>
+
+                    <p className="text-text-muted text-xs">Toque no quadrado para finalizar</p>
                   </motion.div>
                 )}
 
@@ -181,7 +323,9 @@ export default function AudioFinalPage() {
                     className="flex flex-col items-center gap-4 w-full"
                   >
                     <p className="text-text-muted text-sm text-center">Ouça com calma antes de enviar 😊</p>
-                    <audio controls src={audioUrl} className="w-full rounded-xl" />
+                    <div className="w-full">
+                      <PremiumAudioPlayer src={audioUrl} />
+                    </div>
                     <div className="flex gap-3 w-full">
                       <motion.button
                         onClick={reRecord}
