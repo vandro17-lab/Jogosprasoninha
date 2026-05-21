@@ -22,6 +22,12 @@ export default function SuaHomenagemPage() {
     return () => { active = false }
   }, [])
 
+  function openGallery() {
+    // garante que a galeria comece do topo (e não na posição rolada da abertura)
+    window.scrollTo(0, 0)
+    setStage('gallery')
+  }
+
   return (
     <main className="relative bg-pearl">
       <AnimatePresence mode="wait">
@@ -31,7 +37,7 @@ export default function SuaHomenagemPage() {
             exit={{ opacity: 0, scale: 1.06, filter: 'blur(12px)' }}
             transition={{ duration: 0.9, ease: easeLuxe }}
           >
-            <IntroScene onOpen={() => setStage('gallery')} />
+            <IntroScene onOpen={openGallery} />
           </motion.div>
         ) : (
           <motion.div

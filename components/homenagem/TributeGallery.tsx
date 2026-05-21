@@ -1,6 +1,7 @@
 'use client'
 
-import { ReactLenis } from 'lenis/react'
+import { useEffect, useRef } from 'react'
+import { ReactLenis, type LenisRef } from 'lenis/react'
 import { motion, useScroll, useSpring } from 'framer-motion'
 import { Heart } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
@@ -52,13 +53,27 @@ function EmptyState() {
 export default function TributeGallery({ homenagens }: { homenagens: Homenagem[] | null }) {
   const { scrollYProgress } = useScroll()
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.3 })
+  const lenisRef = useRef<LenisRef>(null)
+
+  // sempre começa do topo, mesmo que a abertura tenha ficado rolada
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+  useEffect(() => {
+    if (homenagens === null) return
+    const raf = requestAnimationFrame(() => {
+      window.scrollTo(0, 0)
+      lenisRef.current?.lenis?.scrollTo(0, { immediate: true })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [homenagens])
 
   if (homenagens === null) return <LoadingState />
 
   const count = homenagens.length
 
   return (
-    <ReactLenis root options={{ lerp: 0.09 }}>
+    <ReactLenis root options={{ lerp: 0.09 }} ref={lenisRef}>
       <motion.div
         aria-hidden
         className="fixed top-0 left-0 right-0 z-50 origin-left"
