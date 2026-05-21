@@ -17,6 +17,9 @@ O Vercel está configurado de forma que pushes para `main` sobem como **Preview*
 
 **Não tente corrigir isso nem mudar configurações do Vercel.** É assim que funciona e o dono sabe fazer a promoção.
 
+**Após cada alteração enviada, lembre o dono:**
+> "As mudanças já estão no Vercel como Preview. Entre no painel do Vercel, encontre o deploy mais recente e promova para Produção para o site atualizar."
+
 ## Fluxo das páginas
 
 ```
