@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock, ChevronDown, ChevronUp, X, Trash2 } from 'lucide-react'
 
 interface Participant {
   id: string
@@ -51,9 +51,27 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   )
 }
 
-function ParticipantCard({ p }: { p: Participant }) {
+function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    const token = localStorage.getItem('admin_token') ?? ''
+    try {
+      await fetch('/api/admin/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ participantId: p.id }),
+      })
+      onDelete(p.id)
+    } catch {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   const whatsappUrl = p.telefone
     ? `https://wa.me/55${p.telefone.replace(/\D/g, '')}`
@@ -81,9 +99,35 @@ function ParticipantCard({ p }: { p: Participant }) {
                 <p className="text-xs text-gray-400 capitalize">{p.parentesco} da Sônia</p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 shrink-0 mt-1">
-              <Clock size={12} />
-              <span>{timeAgo(p.created_at)}</span>
+            <div className="flex items-center gap-2 shrink-0 mt-1">
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <Clock size={12} />{timeAgo(p.created_at)}
+              </span>
+              {!confirmDelete ? (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                  title="Apagar"
+                >
+                  <Trash2 size={14} />
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-2 py-1 rounded-lg text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  >
+                    {deleting ? '…' : 'Apagar'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-2 py-1 rounded-lg text-xs text-gray-400 hover:bg-gray-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -309,7 +353,11 @@ export default function AdminDashboard() {
 
         {/* Lista */}
         {!loading && participants.map((p) => (
-          <ParticipantCard key={p.id} p={p} />
+          <ParticipantCard
+            key={p.id}
+            p={p}
+            onDelete={(id) => setParticipants((prev) => prev.filter((x) => x.id !== id))}
+          />
         ))}
       </div>
     </main>
