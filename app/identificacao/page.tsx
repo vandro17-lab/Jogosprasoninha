@@ -123,8 +123,7 @@ export default function IdentificacaoPage() {
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Só seu primeiro nome"
-                className="flex-1 bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none focus-ring"
-                autoFocus
+                className="flex-1 bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
                 autoComplete="given-name"
               />
               <UserRound size={24} color="#C9A84C" strokeWidth={1.5} />
@@ -181,7 +180,7 @@ export default function IdentificacaoPage() {
               value={telefone}
               onChange={(e) => setTelefone(formatPhone(e.target.value))}
               placeholder="(99) 99999-9999"
-              className="w-full bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none focus-ring"
+              className="w-full bg-transparent text-text-dark text-lg placeholder-text-muted/50 outline-none"
               inputMode="numeric"
               style={{ position: 'relative', zIndex: 2 }}
             />

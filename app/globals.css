@@ -127,15 +127,34 @@ html {
 }
 
 /* ─── Focus rings ─── */
-:focus-visible {
+/* Keyboard focus indicator — scoped to interactive controls only.
+   Inputs/textareas use :focus-within on their parent card (see below)
+   to keep the input box itself layout-stable (no outline shift). */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
   outline: 2px solid rgba(201, 168, 76, 0.55);
   outline-offset: 3px;
-  border-radius: 6px;
 }
 .focus-ring:focus-visible {
   outline: 2px solid rgba(201, 168, 76, 0.65);
   outline-offset: 3px;
   box-shadow: 0 0 0 6px rgba(201, 168, 76, 0.12);
+}
+
+/* Input focus state — applied to the card containing the focused input.
+   Layout-stable: only box-shadow + border-color via the gradient pseudo,
+   so the input box never moves. */
+.glass-card-premium:focus-within,
+.glass-card-soft-rose:focus-within,
+.glass-card-ornate:focus-within {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 1px 2px rgba(61, 50, 40, 0.05),
+    0 0 0 1px rgba(201, 168, 76, 0.25),
+    0 12px 36px -10px rgba(201, 168, 76, 0.28),
+    0 24px 48px -20px rgba(61, 50, 40, 0.10);
+  transition: box-shadow 0.35s var(--ease-luxe);
 }
 
 /* ─── Keyframes ─── */
@@ -280,6 +299,7 @@ html {
   position: relative;
   border-radius: 1.75rem;
   isolation: isolate;
+  transition: box-shadow 0.35s var(--ease-luxe);
 }
 
 .glass-card-premium {
