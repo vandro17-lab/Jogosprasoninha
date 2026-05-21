@@ -90,7 +90,7 @@ export default function FotosPage() {
         className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
       >
         <motion.div variants={itemVariants} className="text-center">
-          <ProgressDots total={5} current={3} />
+          <ProgressDots total={4} current={2} />
           <h1 className="font-playfair text-xl text-text-dark mt-4">Fotos com a Sônia 😊</h1>
         </motion.div>
 

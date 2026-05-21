@@ -102,7 +102,7 @@ export default function IdentificacaoPage() {
         className="relative z-10 max-w-sm w-full flex flex-col gap-6"
       >
         <motion.div variants={itemVariants} className="text-center">
-          <ProgressDots total={5} current={0} />
+          <ProgressDots total={4} current={0} />
           <h1 className="font-playfair text-2xl text-text-dark mt-4">Que bom ter você aqui 😊</h1>
           <p className="text-text-muted text-sm mt-1">Antes de começarmos… como a Sônia te conhece?</p>
         </motion.div>

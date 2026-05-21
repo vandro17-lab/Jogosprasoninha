@@ -111,7 +111,7 @@ export default function AudioFinalPage() {
         className="relative z-10 max-w-sm w-full mx-auto flex flex-col gap-6"
       >
         <motion.div variants={itemVariants} className="text-center">
-          <ProgressDots total={5} current={4} />
+          <ProgressDots total={4} current={3} />
           <h1 className="font-playfair text-xl text-text-dark mt-4">
             Deixe um recado para a Sônia
           </h1>
