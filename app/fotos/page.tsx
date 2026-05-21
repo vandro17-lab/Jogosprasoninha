@@ -177,7 +177,7 @@ export default function FotosPage() {
           whileTap={uploading ? {} : { scale: 0.97 }}
           className="w-full py-4 rounded-2xl font-medium text-white text-base shadow-lg disabled:opacity-60 shimmer-btn"
         >
-          {photos.length > 0 ? 'Continuar com as fotos' : 'Pular por agora'}
+          {photos.length > 0 ? 'Continuar com as fotos' : 'Pular'}
         </motion.button>
       </motion.div>
     </main>
