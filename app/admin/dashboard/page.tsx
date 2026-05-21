@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock, ChevronDown, ChevronUp, X, Trash2 } from 'lucide-react'
+import { LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock, ChevronDown, ChevronUp, X, Trash2, CheckCircle2, Circle } from 'lucide-react'
 
 interface Participant {
   id: string
@@ -11,6 +11,7 @@ interface Participant {
   parentesco: string
   telefone: string | null
   created_at: string
+  approved: boolean
   mensagem: string | null
   fotos: string[]
   audio: string | null
@@ -37,10 +38,16 @@ function formatDate(dateStr: string) {
   })
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
   return (
-    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(201,168,76,0.12)' }}>
+    <div
+      className="bg-white rounded-2xl p-4 border shadow-sm flex items-center gap-3"
+      style={{ borderColor: highlight ? 'rgba(34,197,94,0.3)' : 'rgb(243,244,246)' }}
+    >
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{ background: highlight ? 'rgba(34,197,94,0.1)' : 'rgba(201,168,76,0.12)' }}
+      >
         {icon}
       </div>
       <div>
@@ -51,25 +58,52 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   )
 }
 
-function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: string) => void }) {
+function ParticipantCard({
+  p,
+  onDelete,
+  onApprove,
+}: {
+  p: Participant
+  onDelete: (id: string) => void
+  onApprove: (id: string, approved: boolean) => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [approving, setApproving] = useState(false)
+
+  const token = () => localStorage.getItem('admin_token') ?? ''
 
   async function handleDelete() {
     setDeleting(true)
-    const token = localStorage.getItem('admin_token') ?? ''
     try {
       await fetch('/api/admin/delete', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ participantId: p.id }),
       })
       onDelete(p.id)
     } catch {
       setDeleting(false)
       setConfirmDelete(false)
+    }
+  }
+
+  async function handleApprove() {
+    setApproving(true)
+    const newApproved = !p.approved
+    try {
+      await fetch('/api/admin/approve', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ participantId: p.id, approved: newApproved }),
+      })
+      onApprove(p.id, newApproved)
+    } catch {
+      // silently revert
+    } finally {
+      setApproving(false)
     }
   }
 
@@ -82,15 +116,31 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+        className="bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-300"
+        style={{
+          border: p.approved
+            ? '1.5px solid rgba(34,197,94,0.45)'
+            : '1px solid rgb(243,244,246)',
+        }}
       >
+        {/* Faixa de aprovado */}
+        {p.approved && (
+          <div
+            className="px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium text-green-700"
+            style={{ background: 'rgba(34,197,94,0.08)', borderBottom: '1px solid rgba(34,197,94,0.15)' }}
+          >
+            <CheckCircle2 size={12} />
+            Aprovado — aparecerá na página da Sônia
+          </div>
+        )}
+
         {/* Header */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
                 className="w-11 h-11 rounded-full flex items-center justify-center text-white font-semibold text-lg shrink-0"
-                style={{ background: 'linear-gradient(135deg, #C9A84C, #A07830)' }}
+                style={{ background: p.approved ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #C9A84C, #A07830)' }}
               >
                 {p.nome[0].toUpperCase()}
               </div>
@@ -99,17 +149,38 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
                 <p className="text-xs text-gray-400 capitalize">{p.parentesco} da Sônia</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0 mt-1">
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <Clock size={12} />{timeAgo(p.created_at)}
+
+            {/* Ações */}
+            <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+              <span className="text-xs text-gray-300 flex items-center gap-1 mr-1">
+                <Clock size={11} />{timeAgo(p.created_at)}
               </span>
+
+              {/* Aprovar */}
+              <button
+                onClick={handleApprove}
+                disabled={approving}
+                title={p.approved ? 'Remover aprovação' : 'Aprovar'}
+                className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+                style={{
+                  color: p.approved ? '#16a34a' : '#d1d5db',
+                  background: p.approved ? 'rgba(34,197,94,0.08)' : 'transparent',
+                }}
+              >
+                {p.approved
+                  ? <CheckCircle2 size={16} />
+                  : <Circle size={16} />
+                }
+              </button>
+
+              {/* Deletar */}
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
                   className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
                   title="Apagar"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={15} />
                 </button>
               ) : (
                 <div className="flex items-center gap-1">
@@ -124,14 +195,14 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
                     onClick={() => setConfirmDelete(false)}
                     className="px-2 py-1 rounded-lg text-xs text-gray-400 hover:bg-gray-100 transition-colors"
                   >
-                    Cancelar
+                    Não
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Indicadores rápidos */}
+          {/* Badges */}
           <div className="flex gap-2 mt-3 flex-wrap">
             {p.mensagem && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
@@ -180,42 +251,32 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 flex flex-col gap-4 border-t border-gray-50 pt-3">
-                {/* Data completa */}
                 <p className="text-xs text-gray-400 flex items-center gap-1">
                   <Clock size={11} /> {formatDate(p.created_at)}
                 </p>
 
-                {/* Mensagem */}
                 {p.mensagem ? (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Mensagem</p>
-                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">
-                      {p.mensagem}
-                    </p>
+                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{p.mensagem}</p>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-300 italic">Sem mensagem de texto</p>
                 )}
 
-                {/* Fotos */}
                 {p.fotos.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Fotos</p>
                     <div className="flex gap-2 flex-wrap">
                       {p.fotos.map((url, i) => (
                         <button key={i} onClick={() => setLightbox(url)}>
-                          <img
-                            src={url}
-                            alt={`Foto ${i + 1}`}
-                            className="w-20 h-20 rounded-xl object-cover border border-gray-100 hover:opacity-90 transition-opacity"
-                          />
+                          <img src={url} alt={`Foto ${i + 1}`} className="w-20 h-20 rounded-xl object-cover border border-gray-100 hover:opacity-90 transition-opacity" />
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Áudio */}
                 {p.audio && (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Áudio</p>
@@ -228,7 +289,6 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
         </AnimatePresence>
       </motion.div>
 
-      {/* Lightbox */}
       <AnimatePresence>
         {lightbox && (
           <motion.div
@@ -238,18 +298,10 @@ function ParticipantCard({ p, onDelete }: { p: Participant; onDelete: (id: strin
             className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
           >
-            <button
-              className="absolute top-4 right-4 text-white"
-              onClick={() => setLightbox(null)}
-            >
+            <button className="absolute top-4 right-4 text-white" onClick={() => setLightbox(null)}>
               <X size={28} />
             </button>
-            <img
-              src={lightbox}
-              alt="Foto ampliada"
-              className="max-w-full max-h-[90vh] rounded-2xl object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <img src={lightbox} alt="Foto ampliada" className="max-w-full max-h-[90vh] rounded-2xl object-contain" onClick={(e) => e.stopPropagation()} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -268,11 +320,8 @@ export default function AdminDashboard() {
     setError('')
     const token = localStorage.getItem('admin_token')
     if (!token) { router.replace('/admin'); return }
-
     try {
-      const res = await fetch('/api/admin/data', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await fetch('/api/admin/data', { headers: { Authorization: `Bearer ${token}` } })
       if (res.status === 401) { localStorage.removeItem('admin_token'); router.replace('/admin'); return }
       const data = await res.json()
       setParticipants(data.participants ?? [])
@@ -293,29 +342,21 @@ export default function AdminDashboard() {
   const totalFotos = participants.reduce((s, p) => s + p.fotos.length, 0)
   const totalAudios = participants.filter((p) => p.audio).length
   const totalMensagens = participants.filter((p) => p.mensagem).length
+  const totalAprovados = participants.filter((p) => p.approved).length
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="font-semibold text-gray-800">Painel da Sônia</h1>
-            <p className="text-xs text-gray-400">{participants.length} participante{participants.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-400">{participants.length} participante{participants.length !== 1 ? 's' : ''} · {totalAprovados} aprovado{totalAprovados !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={fetchData}
-              className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
-              title="Atualizar"
-            >
+            <button onClick={fetchData} className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors" title="Atualizar">
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
-              title="Sair"
-            >
+            <button onClick={handleLogout} className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors" title="Sair">
               <LogOut size={18} />
             </button>
           </div>
@@ -323,27 +364,21 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-5 flex flex-col gap-4">
-        {/* Stats */}
         {!loading && participants.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             <StatCard icon={<Users size={18} color="#C9A84C" />} label="participantes" value={participants.length} />
+            <StatCard icon={<CheckCircle2 size={18} color="#16a34a" />} label="aprovados" value={totalAprovados} highlight />
             <StatCard icon={<MessageSquare size={18} color="#C9A84C" />} label="mensagens" value={totalMensagens} />
             <StatCard icon={<Image size={18} color="#C9A84C" />} label="fotos" value={totalFotos} />
-            <StatCard icon={<Mic size={18} color="#C9A84C" />} label="áudios" value={totalAudios} />
           </div>
         )}
 
-        {/* Estados */}
         {loading && (
           <div className="flex items-center justify-center py-16">
             <RefreshCw size={24} color="#C9A84C" className="animate-spin" />
           </div>
         )}
-
-        {!loading && error && (
-          <p className="text-red-500 text-sm text-center py-8">{error}</p>
-        )}
-
+        {!loading && error && <p className="text-red-500 text-sm text-center py-8">{error}</p>}
         {!loading && !error && participants.length === 0 && (
           <div className="text-center py-16">
             <p className="text-gray-400 text-sm">Nenhum participante ainda.</p>
@@ -351,12 +386,12 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Lista */}
         {!loading && participants.map((p) => (
           <ParticipantCard
             key={p.id}
             p={p}
             onDelete={(id) => setParticipants((prev) => prev.filter((x) => x.id !== id))}
+            onApprove={(id, approved) => setParticipants((prev) => prev.map((x) => x.id === id ? { ...x, approved } : x))}
           />
         ))}
       </div>
