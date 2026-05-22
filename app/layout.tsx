@@ -48,11 +48,10 @@ export const metadata: Metadata = {
     locale: 'pt_BR',
     images: [
       {
-        url: '/api/og',
-        width: 1200,
-        height: 630,
-        alt: 'Uma homenagem especial para Soninha',
-        type: 'image/png',
+        url: '/sonia.jpg',
+        width: 1024,
+        height: 1536,
+        alt: 'Sônia',
       },
     ],
   },
@@ -60,7 +59,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Uma homenagem especial para Soninha ❤️',
     description: 'Deixe sua mensagem, memória ou carinho.',
-    images: ['/api/og'],
+    images: ['/sonia.jpg'],
   },
 }
 
