@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, X } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
@@ -236,6 +236,17 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
             className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
           >
+            <button
+              className="absolute top-5 right-5 w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-90"
+              style={{
+                background: 'rgba(0,0,0,0.55)',
+                border: '1.5px solid rgba(201,168,76,0.7)',
+                color: '#C9A84C',
+              }}
+              onClick={(e) => { e.stopPropagation(); setLightbox(null) }}
+            >
+              <X size={18} />
+            </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={lightbox}
@@ -312,26 +323,20 @@ function GiftButton({ onClick }: { onClick: () => void }) {
 /* ─── Intro screen (video or photo) ─── */
 function IntroScreen({ onReveal }: { onReveal: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [videoEnded, setVideoEnded] = useState(false)
   const [videoError, setVideoError] = useState(false)
   const [showButton, setShowButton] = useState(false)
 
-  // Show button after video ends, or after 1.5s if no video
-  useEffect(() => {
-    if (videoError) {
-      const t = setTimeout(() => setShowButton(true), 1500)
-      return () => clearTimeout(t)
-    }
-  }, [videoError])
-
   function handleVideoEnded() {
-    setVideoEnded(true)
     setShowButton(true)
   }
 
-  // Also show button after 12s max even if video is still playing
   useEffect(() => {
-    const t = setTimeout(() => setShowButton(true), 12000)
+    if (videoError) setShowButton(true)
+  }, [videoError])
+
+  // Show button after 3s max so photo is never stuck with a spinner
+  useEffect(() => {
+    const t = setTimeout(() => setShowButton(true), 3000)
     return () => clearTimeout(t)
   }, [])
 
@@ -344,7 +349,18 @@ function IntroScreen({ onReveal }: { onReveal: () => void }) {
       transition={{ duration: 0.8 }}
       className="fixed inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Video background */}
+      {/* Photo always visible as base layer */}
+      <div className="absolute inset-0">
+        <Image
+          src="/sonia.jpg"
+          alt="Sônia"
+          fill
+          className="object-cover object-top"
+          priority
+        />
+      </div>
+
+      {/* Video on top when available */}
       {!videoError && (
         <video
           ref={videoRef}
@@ -356,19 +372,6 @@ function IntroScreen({ onReveal }: { onReveal: () => void }) {
           onEnded={handleVideoEnded}
           onError={() => setVideoError(true)}
         />
-      )}
-
-      {/* Photo fallback (shown when no video) */}
-      {videoError && (
-        <div className="absolute inset-0">
-          <Image
-            src="/sonia.jpg"
-            alt="Sônia"
-            fill
-            className="object-cover object-top"
-            priority
-          />
-        </div>
       )}
 
       {/* Cinematic overlay */}
