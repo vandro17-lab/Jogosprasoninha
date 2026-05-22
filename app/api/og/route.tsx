@@ -1,11 +1,12 @@
 import { ImageResponse } from 'next/og'
-import { NextRequest } from 'next/server'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
-export const runtime = 'edge'
-
-export async function GET(request: NextRequest) {
-  const baseUrl = new URL(request.url).origin
-  const soniaUrl = `${baseUrl}/sonia.jpg`
+export async function GET() {
+  const imgData = readFileSync(join(process.cwd(), 'public', 'sonia.jpg'))
+  const base64 = Buffer.from(imgData).toString('base64')
+  // File is PNG despite the .jpg extension
+  const imgSrc = `data:image/png;base64,${base64}`
 
   return new ImageResponse(
     (
@@ -19,10 +20,10 @@ export async function GET(request: NextRequest) {
           overflow: 'hidden',
         }}
       >
-        {/* Full-bleed photo (right side) */}
+        {/* Full-bleed photo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={soniaUrl}
+          src={imgSrc}
           alt=""
           style={{
             position: 'absolute',
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
           }}
         />
 
-        {/* Cinematic warm gradient overlay */}
+        {/* Warm gradient overlay */}
         <div
           style={{
             position: 'absolute',
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
           }}
         />
 
-        {/* Subtle vignette top/bottom */}
+        {/* Vignette */}
         <div
           style={{
             position: 'absolute',
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
           }}
         />
 
-        {/* Text block */}
+        {/* Text */}
         <div
           style={{
             position: 'absolute',
@@ -68,10 +69,8 @@ export async function GET(request: NextRequest) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            gap: 0,
           }}
         >
-          {/* Eyebrow label */}
           <div
             style={{
               fontSize: 20,
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest) {
             59 anos • 2026
           </div>
 
-          {/* Main title */}
           <div
             style={{
               fontSize: 68,
@@ -99,7 +97,6 @@ export async function GET(request: NextRequest) {
             Uma homenagem especial para Soninha ❤️
           </div>
 
-          {/* Divider */}
           <div
             style={{
               width: 64,
@@ -111,7 +108,6 @@ export async function GET(request: NextRequest) {
             }}
           />
 
-          {/* Subtitle */}
           <div
             style={{
               fontSize: 28,
