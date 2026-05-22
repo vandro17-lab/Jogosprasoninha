@@ -77,6 +77,85 @@ function AudioPlayer({ src, nome }: { src: string; nome: string }) {
   )
 }
 
+/* ─── Photo carousel ─── */
+function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string; onOpen: (url: string) => void }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  function onScroll() {
+    const el = scrollRef.current
+    if (!el) return
+    const index = Math.round(el.scrollLeft / el.offsetWidth)
+    setActiveIndex(index)
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <Camera size={11} color="#C9A84C" />
+          <span className="text-xs text-text-muted font-medium uppercase tracking-wide">
+            {fotos.length === 1 ? 'Foto' : `${fotos.length} fotos`}
+          </span>
+        </div>
+        {/* Dots */}
+        {fotos.length > 1 && (
+          <div className="flex items-center gap-1">
+            {fotos.map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === activeIndex ? 16 : 6,
+                  height: 6,
+                  background: i === activeIndex ? '#C9A84C' : 'rgba(201,168,76,0.3)',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Scroll container */}
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-2 pb-1"
+        style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        {fotos.map((url, i) => (
+          <button
+            key={i}
+            onClick={() => onOpen(url)}
+            className="shrink-0 snap-center overflow-hidden rounded-2xl active:scale-95 transition-transform"
+            style={{
+              width: fotos.length === 1 ? '100%' : 'calc(85%)',
+              height: 220,
+              boxShadow: '0 4px 16px rgba(61,50,40,0.15)',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={`Foto ${i + 1} de ${nome}`} className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+
+      {/* Instruction hint */}
+      {fotos.length > 1 && (
+        <p className="text-center text-xs mt-2" style={{ color: 'rgba(139,115,85,0.65)' }}>
+          Passe o dedo para o lado · Toque para ampliar
+        </p>
+      )}
+      {fotos.length === 1 && (
+        <p className="text-center text-xs mt-2" style={{ color: 'rgba(139,115,85,0.65)' }}>
+          Toque na imagem para ampliar
+        </p>
+      )}
+    </div>
+  )
+}
+
 /* ─── Tribute card ─── */
 function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
   const [lightbox, setLightbox] = useState<string | null>(null)
@@ -130,33 +209,9 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
             </div>
           )}
 
-          {/* Photos */}
+          {/* Photos carousel */}
           {tribute.fotos.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <Camera size={11} color="#C9A84C" />
-                <span className="text-xs text-text-muted font-medium uppercase tracking-wide">
-                  {tribute.fotos.length === 1 ? 'Foto' : `${tribute.fotos.length} fotos`}
-                </span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {tribute.fotos.map((url, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setLightbox(url)}
-                    className="relative overflow-hidden rounded-2xl transition-transform hover:scale-[1.02] active:scale-95"
-                    style={{
-                      width: tribute.fotos.length === 1 ? '100%' : 88,
-                      height: tribute.fotos.length === 1 ? 220 : 88,
-                      boxShadow: '0 4px 14px rgba(61,50,40,0.15)',
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Foto de ${tribute.nome}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
+            <PhotoCarousel fotos={tribute.fotos} nome={tribute.nome} onOpen={setLightbox} />
           )}
 
           {/* Audio */}
