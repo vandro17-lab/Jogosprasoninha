@@ -285,6 +285,151 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
   )
 }
 
+/* ─── Loading dots ─── */
+function LoadingDots() {
+  return (
+    <div className="flex items-center gap-2">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="block rounded-full"
+          style={{ width: 7, height: 7, background: '#C9A84C' }}
+          animate={{ opacity: [0.2, 1, 0.2], y: [0, -5, 0] }}
+          transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/* ─── Splash screen ─── */
+function SplashScreen() {
+  const [imgErr, setImgErr] = useState(false)
+
+  return (
+    <motion.div
+      key="splash"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.06 }}
+      transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 overflow-hidden"
+      style={{ background: 'radial-gradient(ellipse at 35% 25%, #FDFCFA 0%, #FBF0F0 48%, #F7EDD8 100%)' }}
+    >
+      <DecoBackground variant="ornate" />
+      <FloralOrnament position="tl" size={72} tone="gold" opacity={0.38} />
+      <FloralOrnament position="tr" size={72} tone="gold" opacity={0.38} />
+      <FloralOrnament position="bl" size={72} tone="gold" opacity={0.38} />
+      <FloralOrnament position="br" size={72} tone="gold" opacity={0.38} />
+
+      <div className="relative z-10 flex flex-col items-center gap-8">
+        {/* Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium animate-breathe"
+          style={{
+            background: 'linear-gradient(135deg, rgba(201,168,76,0.14) 0%, rgba(232,213,163,0.30) 100%)',
+            border: '1px solid rgba(201,168,76,0.35)',
+            color: '#A07830',
+            letterSpacing: '0.16em',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 4px 12px -4px rgba(201,168,76,0.25)',
+          }}
+        >
+          🎂 59 anos · 3 de junho
+        </motion.div>
+
+        {/* Photo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.82 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="relative"
+        >
+          <div
+            className="absolute -inset-8 rounded-full opacity-55 animate-glow-pulse"
+            style={{ background: 'radial-gradient(circle, rgba(232,213,163,0.6), transparent 65%)' }}
+          />
+          <div
+            className="absolute -inset-3 rounded-full animate-breathe"
+            style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.18), transparent 70%)' }}
+          />
+          <div
+            className="relative w-44 h-44 rounded-full overflow-hidden"
+            style={{
+              boxShadow: '0 1px 0 rgba(255,255,255,0.9) inset, 0 14px 52px rgba(201,168,76,0.5), 0 28px 72px -14px rgba(61,50,40,0.30)',
+              border: '5px solid #FFFDF9',
+              background: '#F0E8D8',
+            }}
+          >
+            {!imgErr ? (
+              <Image
+                src="/sonia.jpg"
+                alt="Sônia"
+                width={176}
+                height={176}
+                className="w-full h-full object-cover object-top"
+                priority
+                onError={() => setImgErr(true)}
+              />
+            ) : (
+              <span
+                className="flex items-center justify-center h-full text-6xl font-bold"
+                style={{ fontFamily: 'var(--font-playfair)', color: '#C9A84C' }}
+              >S</span>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Text */}
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="flex flex-col items-center gap-1.5 text-center"
+        >
+          <p
+            className="text-sm font-medium tracking-widest uppercase"
+            style={{ color: '#A07830' }}
+          >
+            Uma surpresa para
+          </p>
+          <h1
+            className="text-5xl font-bold"
+            style={{
+              fontFamily: 'var(--font-playfair), Georgia, serif',
+              color: '#3D3228',
+              textShadow: '0 2px 12px rgba(201,168,76,0.18)',
+            }}
+          >
+            Sônia
+          </h1>
+          <p
+            className="text-sm mt-1"
+            style={{ color: '#C9A84C', fontFamily: 'var(--font-playfair)', fontStyle: 'italic' }}
+          >
+            com todo o nosso amor 🤍
+          </p>
+        </motion.div>
+
+        {/* Loading indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.85 }}
+          className="flex flex-col items-center gap-2.5"
+        >
+          <LoadingDots />
+          <p className="text-xs text-text-muted" style={{ letterSpacing: '0.06em' }}>
+            Preparando sua homenagem…
+          </p>
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+}
+
 /* ─── Gift button ─── */
 function GiftButton({ onClick }: { onClick: () => void }) {
   return (
@@ -466,8 +611,16 @@ export default function SuaHomenagem() {
   const [revealed, setRevealed] = useState(false)
   const [tributes, setTributes] = useState<Tribute[]>([])
   const [loading, setLoading] = useState(true)
+  const [splashDone, setSplashDone] = useState(false)
+  const [minTimeDone, setMinTimeDone] = useState(false)
   const [imgError, setImgError] = useState(false)
   const tributesRef = useRef<HTMLDivElement>(null)
+
+  // Splash mínimo de 2.8s para experiência fluida
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeDone(true), 2800)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     fetch('/api/homenagem')
@@ -476,6 +629,11 @@ export default function SuaHomenagem() {
       .catch(() => setTributes([]))
       .finally(() => setLoading(false))
   }, [])
+
+  // Esconde splash só quando dados carregaram E tempo mínimo passou
+  useEffect(() => {
+    if (!loading && minTimeDone) setSplashDone(true)
+  }, [loading, minTimeDone])
 
   function handleReveal() {
     setRevealed(true)
@@ -486,6 +644,11 @@ export default function SuaHomenagem() {
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
+      {/* Splash de carregamento */}
+      <AnimatePresence>
+        {!splashDone && <SplashScreen />}
+      </AnimatePresence>
+
       {/* Intro screen */}
       <AnimatePresence>
         {!revealed && <IntroScreen onReveal={handleReveal} />}
