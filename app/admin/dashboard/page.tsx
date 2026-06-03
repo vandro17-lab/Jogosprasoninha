@@ -91,6 +91,8 @@ function ParticipantCard({
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [uploadingAudio, setUploadingAudio] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
+  const [videoProgress, setVideoProgress] = useState<number | null>(null)
+  const [videoError, setVideoError] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
@@ -198,18 +200,46 @@ function ParticipantCard({
 
   async function handleUploadVideo(file: File) {
     setUploadingVideo(true)
-    const form = new FormData()
-    form.append('file', file)
-    form.append('participantId', p.id)
-    const res = await fetch('/api/admin/upload-video', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token()}` },
-      body: form,
-    })
-    const data = await res.json()
-    if (data.url) onUpdate(p.id, { videos: [...p.videos, data.url] })
-    setUploadingVideo(false)
-    if (videoInputRef.current) videoInputRef.current.value = ''
+    setVideoProgress(0)
+    setVideoError(null)
+    try {
+      // 1. Pede URL assinada ao servidor (sem passar o arquivo)
+      const urlRes = await fetch('/api/admin/get-upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ participantId: p.id, fileName: file.name }),
+      })
+      const { signedUrl, publicUrl, error: urlErr } = await urlRes.json()
+      if (urlErr || !signedUrl) throw new Error(urlErr ?? 'Erro ao gerar URL')
+
+      // 2. Upload direto para o Supabase com progresso (sem passar pelo Vercel)
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setVideoProgress(Math.round((e.loaded / e.total) * 100))
+        }
+        xhr.onload = () => (xhr.status < 400 ? resolve() : reject(new Error(`Falha no upload (${xhr.status})`)))
+        xhr.onerror = () => reject(new Error('Erro de rede'))
+        xhr.open('PUT', signedUrl)
+        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
+        xhr.send(file)
+      })
+
+      // 3. Salva a URL no banco
+      await fetch('/api/admin/save-video-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ participantId: p.id, videoUrl: publicUrl }),
+      })
+
+      onUpdate(p.id, { videos: [...p.videos, publicUrl] })
+    } catch (err) {
+      setVideoError(err instanceof Error ? err.message : 'Erro desconhecido')
+    } finally {
+      setUploadingVideo(false)
+      setVideoProgress(null)
+      if (videoInputRef.current) videoInputRef.current.value = ''
+    }
   }
 
   const whatsappUrl = p.telefone
@@ -500,7 +530,9 @@ function ParticipantCard({
                       className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-orange-50 disabled:opacity-40"
                     >
                       <Upload size={11} />
-                      {uploadingVideo ? 'Enviando…' : 'Subir vídeo'}
+                      {uploadingVideo
+                        ? videoProgress !== null ? `${videoProgress}%` : 'Preparando…'
+                        : 'Subir vídeo'}
                     </button>
                     <input
                       ref={videoInputRef}
@@ -510,6 +542,22 @@ function ParticipantCard({
                       onChange={(e) => e.target.files?.[0] && handleUploadVideo(e.target.files[0])}
                     />
                   </div>
+
+                  {uploadingVideo && videoProgress !== null && (
+                    <div className="mb-2">
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-orange-400 rounded-full transition-all duration-200"
+                          style={{ width: `${videoProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{videoProgress}% enviado</p>
+                    </div>
+                  )}
+
+                  {videoError && (
+                    <p className="text-xs text-red-400 mb-2">{videoError}</p>
+                  )}
 
                   {p.videos.length > 0 ? (
                     <div className="flex flex-col gap-3">
