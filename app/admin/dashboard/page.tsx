@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock, ChevronDown, ChevronUp, X, Trash2, CheckCircle2, Circle } from 'lucide-react'
+import {
+  LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock,
+  ChevronDown, ChevronUp, X, Trash2, CheckCircle2, Circle,
+  Pencil, Upload, Check,
+} from 'lucide-react'
 
 interface Participant {
   id: string
@@ -62,16 +66,27 @@ function ParticipantCard({
   p,
   onDelete,
   onApprove,
+  onUpdate,
 }: {
   p: Participant
   onDelete: (id: string) => void
   onApprove: (id: string, approved: boolean) => void
+  onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio'>>) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [approving, setApproving] = useState(false)
+
+  const [editingMsg, setEditingMsg] = useState(false)
+  const [editText, setEditText] = useState(p.mensagem ?? '')
+  const [savingMsg, setSavingMsg] = useState(false)
+
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [uploadingAudio, setUploadingAudio] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const audioInputRef = useRef<HTMLInputElement>(null)
 
   const token = () => localStorage.getItem('admin_token') ?? ''
 
@@ -107,6 +122,58 @@ function ParticipantCard({
     }
   }
 
+  async function handleSaveMessage() {
+    setSavingMsg(true)
+    try {
+      await fetch('/api/admin/update-message', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ participantId: p.id, mensagem: editText }),
+      })
+      onUpdate(p.id, { mensagem: editText })
+      setEditingMsg(false)
+    } finally {
+      setSavingMsg(false)
+    }
+  }
+
+  async function handleUploadPhotos(files: FileList) {
+    if (!files.length) return
+    setUploadingPhotos(true)
+    const newUrls: string[] = []
+    for (const file of Array.from(files)) {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('participantId', p.id)
+      const res = await fetch('/api/admin/upload-photo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: form,
+      })
+      const data = await res.json()
+      if (data.url) newUrls.push(data.url)
+    }
+    onUpdate(p.id, { fotos: [...p.fotos, ...newUrls] })
+    setUploadingPhotos(false)
+    if (photoInputRef.current) photoInputRef.current.value = ''
+  }
+
+  async function handleUploadAudio(file: File) {
+    setUploadingAudio(true)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('participantId', p.id)
+    const res = await fetch('/api/admin/upload-audio', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token()}` },
+      body: form,
+    })
+    const data = await res.json()
+    if (data.url) onUpdate(p.id, { audio: data.url })
+    setUploadingAudio(false)
+    if (audioInputRef.current) audioInputRef.current.value = ''
+  }
+
   const whatsappUrl = p.telefone
     ? `https://wa.me/55${p.telefone.replace(/\D/g, '')}`
     : null
@@ -123,7 +190,6 @@ function ParticipantCard({
             : '1px solid rgb(243,244,246)',
         }}
       >
-        {/* Faixa de aprovado */}
         {p.approved && (
           <div
             className="px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium text-green-700"
@@ -134,7 +200,6 @@ function ParticipantCard({
           </div>
         )}
 
-        {/* Header */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -150,13 +215,11 @@ function ParticipantCard({
               </div>
             </div>
 
-            {/* Ações */}
             <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
               <span className="text-xs text-gray-300 flex items-center gap-1 mr-1">
                 <Clock size={11} />{timeAgo(p.created_at)}
               </span>
 
-              {/* Aprovar */}
               <button
                 onClick={handleApprove}
                 disabled={approving}
@@ -167,13 +230,9 @@ function ParticipantCard({
                   background: p.approved ? 'rgba(34,197,94,0.08)' : 'transparent',
                 }}
               >
-                {p.approved
-                  ? <CheckCircle2 size={16} />
-                  : <Circle size={16} />
-                }
+                {p.approved ? <CheckCircle2 size={16} /> : <Circle size={16} />}
               </button>
 
-              {/* Deletar */}
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
@@ -202,7 +261,6 @@ function ParticipantCard({
             </div>
           </div>
 
-          {/* Badges */}
           <div className="flex gap-2 mt-3 flex-wrap">
             {p.mensagem && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
@@ -232,7 +290,6 @@ function ParticipantCard({
           </div>
         </div>
 
-        {/* Expandir */}
         <button
           onClick={() => setExpanded(!expanded)}
           className="w-full px-4 py-2.5 flex items-center justify-between text-xs text-gray-400 border-t border-gray-50 hover:bg-gray-50 transition-colors"
@@ -255,18 +312,77 @@ function ParticipantCard({
                   <Clock size={11} /> {formatDate(p.created_at)}
                 </p>
 
-                {p.mensagem ? (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Mensagem</p>
-                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{p.mensagem}</p>
+                {/* Mensagem */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Mensagem</p>
+                    {!editingMsg && (
+                      <button
+                        onClick={() => { setEditText(p.mensagem ?? ''); setEditingMsg(true) }}
+                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-blue-50"
+                      >
+                        <Pencil size={11} />
+                        {p.mensagem ? 'Editar' : 'Adicionar'}
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-xs text-gray-300 italic">Sem mensagem de texto</p>
-                )}
 
-                {p.fotos.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Fotos</p>
+                  {editingMsg ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        rows={4}
+                        className="w-full text-sm text-gray-700 bg-gray-50 rounded-xl p-3 border border-blue-200 focus:outline-none focus:border-blue-400 resize-none"
+                        placeholder="Escreva a mensagem aqui…"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveMessage}
+                          disabled={savingMsg}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                        >
+                          <Check size={12} />
+                          {savingMsg ? 'Salvando…' : 'Salvar'}
+                        </button>
+                        <button
+                          onClick={() => { setEditText(p.mensagem ?? ''); setEditingMsg(false) }}
+                          className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-100 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : p.mensagem ? (
+                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-3 whitespace-pre-wrap">{p.mensagem}</p>
+                  ) : (
+                    <p className="text-xs text-gray-300 italic">Sem mensagem de texto</p>
+                  )}
+                </div>
+
+                {/* Fotos */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fotos</p>
+                    <button
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhotos}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-purple-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-purple-50 disabled:opacity-40"
+                    >
+                      <Upload size={11} />
+                      {uploadingPhotos ? 'Enviando…' : 'Subir fotos'}
+                    </button>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => e.target.files && handleUploadPhotos(e.target.files)}
+                    />
+                  </div>
+
+                  {p.fotos.length > 0 ? (
                     <div className="flex gap-2 flex-wrap">
                       {p.fotos.map((url, i) => (
                         <button key={i} onClick={() => setLightbox(url)}>
@@ -274,15 +390,38 @@ function ParticipantCard({
                         </button>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-gray-300 italic">Sem fotos</p>
+                  )}
+                </div>
 
-                {p.audio && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Áudio</p>
-                    <audio controls src={p.audio} className="w-full rounded-xl" style={{ height: 40 }} />
+                {/* Áudio */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Áudio</p>
+                    <button
+                      onClick={() => audioInputRef.current?.click()}
+                      disabled={uploadingAudio}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-green-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-green-50 disabled:opacity-40"
+                    >
+                      <Upload size={11} />
+                      {uploadingAudio ? 'Enviando…' : p.audio ? 'Substituir áudio' : 'Subir áudio'}
+                    </button>
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept="audio/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleUploadAudio(e.target.files[0])}
+                    />
                   </div>
-                )}
+
+                  {p.audio ? (
+                    <audio controls src={p.audio} className="w-full rounded-xl" style={{ height: 40 }} />
+                  ) : (
+                    <p className="text-xs text-gray-300 italic">Sem áudio</p>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -392,6 +531,7 @@ export default function AdminDashboard() {
             p={p}
             onDelete={(id) => setParticipants((prev) => prev.filter((x) => x.id !== id))}
             onApprove={(id, approved) => setParticipants((prev) => prev.map((x) => x.id === id ? { ...x, approved } : x))}
+            onUpdate={(id, updates) => setParticipants((prev) => prev.map((x) => x.id === id ? { ...x, ...updates } : x))}
           />
         ))}
       </div>
