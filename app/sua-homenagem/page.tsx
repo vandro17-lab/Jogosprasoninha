@@ -285,25 +285,8 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
   )
 }
 
-/* ─── Loading dots ─── */
-function LoadingDots() {
-  return (
-    <div className="flex items-center gap-2">
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          className="block rounded-full"
-          style={{ width: 7, height: 7, background: '#C9A84C' }}
-          animate={{ opacity: [0.2, 1, 0.2], y: [0, -5, 0] }}
-          transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
-        />
-      ))}
-    </div>
-  )
-}
-
-/* ─── Splash screen ─── */
-function SplashScreen() {
+/* ─── Splash screen com progresso real ─── */
+function SplashScreen({ progress }: { progress: number }) {
   const [imgErr, setImgErr] = useState(false)
 
   return (
@@ -382,48 +365,50 @@ function SplashScreen() {
           </div>
         </motion.div>
 
-        {/* Text */}
+        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.5 }}
           className="flex flex-col items-center gap-1.5 text-center"
         >
-          <p
-            className="text-sm font-medium tracking-widest uppercase"
-            style={{ color: '#A07830' }}
-          >
+          <p className="text-sm font-medium tracking-widest uppercase" style={{ color: '#A07830' }}>
             Uma surpresa para
           </p>
           <h1
             className="text-5xl font-bold"
-            style={{
-              fontFamily: 'var(--font-playfair), Georgia, serif',
-              color: '#3D3228',
-              textShadow: '0 2px 12px rgba(201,168,76,0.18)',
-            }}
+            style={{ fontFamily: 'var(--font-playfair), Georgia, serif', color: '#3D3228', textShadow: '0 2px 12px rgba(201,168,76,0.18)' }}
           >
             Sônia
           </h1>
-          <p
-            className="text-sm mt-1"
-            style={{ color: '#C9A84C', fontFamily: 'var(--font-playfair)', fontStyle: 'italic' }}
-          >
+          <p className="text-sm mt-1" style={{ color: '#C9A84C', fontFamily: 'var(--font-playfair)', fontStyle: 'italic' }}>
             com todo o nosso amor 🤍
           </p>
         </motion.div>
 
-        {/* Loading indicator */}
+        {/* Barra de progresso real */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.85 }}
-          className="flex flex-col items-center gap-2.5"
+          className="flex flex-col items-center gap-2.5 w-64"
         >
-          <LoadingDots />
-          <p className="text-xs text-text-muted" style={{ letterSpacing: '0.06em' }}>
-            Preparando sua homenagem…
-          </p>
+          <div className="flex items-center justify-between w-full">
+            <p className="text-xs text-text-muted" style={{ letterSpacing: '0.06em' }}>
+              Carregando homenagem…
+            </p>
+            <p className="text-xs font-semibold" style={{ color: '#A07830' }}>
+              {progress}%
+            </p>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(201,168,76,0.18)' }}>
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg, #D9B95C, #C9A84C)' }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            />
+          </div>
         </motion.div>
       </div>
     </motion.div>
@@ -610,30 +595,88 @@ function IntroScreen({ onReveal }: { onReveal: () => void }) {
 export default function SuaHomenagem() {
   const [revealed, setRevealed] = useState(false)
   const [tributes, setTributes] = useState<Tribute[]>([])
-  const [loading, setLoading] = useState(true)
   const [splashDone, setSplashDone] = useState(false)
-  const [minTimeDone, setMinTimeDone] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [imgError, setImgError] = useState(false)
   const tributesRef = useRef<HTMLDivElement>(null)
+  const loadedRef = useRef(0)
+  const totalRef = useRef(0)
 
-  // Splash mínimo de 2.8s para experiência fluida
   useEffect(() => {
-    const t = setTimeout(() => setMinTimeDone(true), 2800)
-    return () => clearTimeout(t)
+    async function loadAll() {
+      // 1. Busca os dados
+      let participants: Tribute[] = []
+      try {
+        const res = await fetch('/api/homenagem')
+        const data = await res.json()
+        participants = data.participants ?? []
+      } catch {
+        participants = []
+      }
+      setTributes(participants)
+
+      // 2. Coleta todas as URLs de mídia
+      const photoUrls = participants.flatMap((p) => p.fotos ?? [])
+      const audioUrls = participants.filter((p) => p.audio).map((p) => p.audio as string)
+      const videoUrls = participants.flatMap((p) => p.videos ?? [])
+      const total = photoUrls.length + audioUrls.length + videoUrls.length
+
+      if (total === 0) {
+        setProgress(100)
+        setSplashDone(true)
+        return
+      }
+
+      totalRef.current = total
+      loadedRef.current = 0
+
+      function onItemLoaded() {
+        loadedRef.current += 1
+        const pct = Math.round((loadedRef.current / totalRef.current) * 100)
+        setProgress(pct)
+        if (loadedRef.current >= totalRef.current) {
+          // Breve pausa para a Sônia ver o 100% antes de fechar
+          setTimeout(() => setSplashDone(true), 400)
+        }
+      }
+
+      function preload(src: string, type: 'image' | 'audio' | 'video') {
+        // Timeout de segurança: 20s por recurso para não travar para sempre
+        let settled = false
+        const settle = () => {
+          if (settled) return
+          settled = true
+          onItemLoaded()
+        }
+        const timeout = setTimeout(settle, 20000)
+
+        if (type === 'image') {
+          const img = new window.Image()
+          img.onload = () => { clearTimeout(timeout); settle() }
+          img.onerror = () => { clearTimeout(timeout); settle() }
+          img.src = src
+        } else if (type === 'audio') {
+          const el = new Audio()
+          el.preload = 'metadata'
+          el.onloadeddata = () => { clearTimeout(timeout); settle() }
+          el.onerror = () => { clearTimeout(timeout); settle() }
+          el.src = src
+        } else {
+          const el = document.createElement('video')
+          el.preload = 'metadata'
+          el.onloadedmetadata = () => { clearTimeout(timeout); settle() }
+          el.onerror = () => { clearTimeout(timeout); settle() }
+          el.src = src
+        }
+      }
+
+      photoUrls.forEach((url) => preload(url, 'image'))
+      audioUrls.forEach((url) => preload(url, 'audio'))
+      videoUrls.forEach((url) => preload(url, 'video'))
+    }
+
+    loadAll().catch(() => { setProgress(100); setSplashDone(true) })
   }, [])
-
-  useEffect(() => {
-    fetch('/api/homenagem')
-      .then((r) => r.json())
-      .then((d) => setTributes(d.participants ?? []))
-      .catch(() => setTributes([]))
-      .finally(() => setLoading(false))
-  }, [])
-
-  // Esconde splash só quando dados carregaram E tempo mínimo passou
-  useEffect(() => {
-    if (!loading && minTimeDone) setSplashDone(true)
-  }, [loading, minTimeDone])
 
   function handleReveal() {
     setRevealed(true)
@@ -646,7 +689,7 @@ export default function SuaHomenagem() {
     <div className="min-h-screen relative overflow-x-hidden">
       {/* Splash de carregamento */}
       <AnimatePresence>
-        {!splashDone && <SplashScreen />}
+        {!splashDone && <SplashScreen progress={progress} />}
       </AnimatePresence>
 
       {/* Intro screen */}
