@@ -579,12 +579,17 @@ function ParticipantCard({
                     <div className="flex flex-col gap-3">
                       {p.videos.map((url, i) => (
                         <div key={i} className="relative group">
-                          <video
-                            controls
-                            src={url}
-                            className="w-full rounded-xl bg-black"
-                            style={{ maxHeight: 220 }}
-                          />
+                          <div
+                            className="relative w-full overflow-hidden rounded-xl"
+                            style={{ height: 220 }}
+                          >
+                            <video
+                              controls
+                              src={url}
+                              className="w-full h-full"
+                              style={{ objectFit: 'cover', display: 'block' }}
+                            />
+                          </div>
                           <button
                             onClick={() => handleDeleteVideo(url)}
                             title="Excluir vídeo"

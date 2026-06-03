@@ -237,14 +237,24 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
               </div>
               <div className="flex flex-col gap-3">
                 {tribute.videos.map((url, i) => (
-                  <video
+                  <div
                     key={i}
-                    controls
-                    playsInline
-                    src={url}
-                    className="w-full rounded-2xl bg-black"
-                    style={{ maxHeight: 280, boxShadow: '0 4px 16px rgba(61,50,40,0.15)' }}
-                  />
+                    className="relative w-full overflow-hidden"
+                    style={{
+                      height: 360,
+                      borderRadius: 20,
+                      border: '1px solid rgba(201,168,76,0.28)',
+                      boxShadow: '0 2px 0 rgba(255,255,255,0.7) inset, 0 8px 28px rgba(61,50,40,0.16)',
+                    }}
+                  >
+                    <video
+                      controls
+                      playsInline
+                      src={url}
+                      className="w-full h-full"
+                      style={{ objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
