@@ -27,10 +27,11 @@ export async function GET(req: NextRequest) {
 
   const ids = participants.map((p) => p.id)
 
-  const [{ data: memories }, { data: photos }, { data: audios }] = await Promise.all([
+  const [{ data: memories }, { data: photos }, { data: audios }, { data: videos }] = await Promise.all([
     supabase.from('memories').select('*').in('participant_id', ids),
     supabase.from('photos').select('*').in('participant_id', ids),
     supabase.from('audios').select('*').in('participant_id', ids),
+    supabase.from('videos').select('*').in('participant_id', ids),
   ])
 
   const result = participants.map((p) => ({
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
     mensagem: (memories ?? []).find((m) => m.participant_id === p.id)?.memoria_bruta ?? null,
     fotos: (photos ?? []).filter((ph) => ph.participant_id === p.id).map((ph) => ph.photo_url),
     audio: (audios ?? []).find((a) => a.participant_id === p.id && a.tipo === 'final')?.audio_url ?? null,
+    videos: (videos ?? []).filter((v) => v.participant_id === p.id).map((v) => v.video_url),
   }))
 
   return NextResponse.json({ participants: result })

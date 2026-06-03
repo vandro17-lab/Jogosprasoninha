@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LogOut, Users, MessageSquare, Image, Mic, RefreshCw, Phone, Clock,
   ChevronDown, ChevronUp, X, Trash2, CheckCircle2, Circle,
-  Pencil, Upload, Check,
+  Pencil, Upload, Check, Video,
 } from 'lucide-react'
 
 interface Participant {
@@ -19,6 +19,7 @@ interface Participant {
   mensagem: string | null
   fotos: string[]
   audio: string | null
+  videos: string[]
 }
 
 function timeAgo(dateStr: string) {
@@ -71,7 +72,7 @@ function ParticipantCard({
   p: Participant
   onDelete: (id: string) => void
   onApprove: (id: string, approved: boolean) => void
-  onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio'>>) => void
+  onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio' | 'videos'>>) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
@@ -85,8 +86,10 @@ function ParticipantCard({
 
   const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [uploadingAudio, setUploadingAudio] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
 
   const token = () => localStorage.getItem('admin_token') ?? ''
 
@@ -172,6 +175,22 @@ function ParticipantCard({
     if (data.url) onUpdate(p.id, { audio: data.url })
     setUploadingAudio(false)
     if (audioInputRef.current) audioInputRef.current.value = ''
+  }
+
+  async function handleUploadVideo(file: File) {
+    setUploadingVideo(true)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('participantId', p.id)
+    const res = await fetch('/api/admin/upload-video', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token()}` },
+      body: form,
+    })
+    const data = await res.json()
+    if (data.url) onUpdate(p.id, { videos: [...p.videos, data.url] })
+    setUploadingVideo(false)
+    if (videoInputRef.current) videoInputRef.current.value = ''
   }
 
   const whatsappUrl = p.telefone
@@ -275,6 +294,11 @@ function ParticipantCard({
             {p.audio && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-600">
                 <Mic size={10} /> áudio
+              </span>
+            )}
+            {p.videos.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-600">
+                <Video size={10} /> {p.videos.length} vídeo{p.videos.length > 1 ? 's' : ''}
               </span>
             )}
             {p.telefone && (
@@ -422,6 +446,44 @@ function ParticipantCard({
                     <p className="text-xs text-gray-300 italic">Sem áudio</p>
                   )}
                 </div>
+
+                {/* Vídeos */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Vídeos</p>
+                    <button
+                      onClick={() => videoInputRef.current?.click()}
+                      disabled={uploadingVideo}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-orange-500 transition-colors px-1.5 py-0.5 rounded-lg hover:bg-orange-50 disabled:opacity-40"
+                    >
+                      <Upload size={11} />
+                      {uploadingVideo ? 'Enviando…' : 'Subir vídeo'}
+                    </button>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleUploadVideo(e.target.files[0])}
+                    />
+                  </div>
+
+                  {p.videos.length > 0 ? (
+                    <div className="flex flex-col gap-3">
+                      {p.videos.map((url, i) => (
+                        <video
+                          key={i}
+                          controls
+                          src={url}
+                          className="w-full rounded-xl bg-black"
+                          style={{ maxHeight: 220 }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-300 italic">Sem vídeos</p>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -463,7 +525,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/data', { headers: { Authorization: `Bearer ${token}` } })
       if (res.status === 401) { localStorage.removeItem('admin_token'); router.replace('/admin'); return }
       const data = await res.json()
-      setParticipants(data.participants ?? [])
+      setParticipants((data.participants ?? []).map((p: Participant) => ({ videos: [], ...p })))
     } catch {
       setError('Erro ao carregar os dados.')
     } finally {
