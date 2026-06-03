@@ -525,7 +525,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/data', { headers: { Authorization: `Bearer ${token}` } })
       if (res.status === 401) { localStorage.removeItem('admin_token'); router.replace('/admin'); return }
       const data = await res.json()
-      setParticipants((data.participants ?? []).map((p: Participant) => ({ videos: [], ...p })))
+      setParticipants((data.participants ?? []).map((p: Participant) => ({ ...p, videos: p.videos ?? [] })))
     } catch {
       setError('Erro ao carregar os dados.')
     } finally {
