@@ -214,6 +214,10 @@ function ParticipantCard({
 
       // 2. Upload direto para o Supabase com progresso (sem passar pelo Vercel)
       await new Promise<void>((resolve, reject) => {
+        const formData = new FormData()
+        formData.append('cacheControl', '3600')
+        formData.append('', file)   // Supabase espera chave vazia
+
         const xhr = new XMLHttpRequest()
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) setVideoProgress(Math.round((e.loaded / e.total) * 100))
@@ -221,8 +225,8 @@ function ParticipantCard({
         xhr.onload = () => (xhr.status < 400 ? resolve() : reject(new Error(`Falha no upload (${xhr.status})`)))
         xhr.onerror = () => reject(new Error('Erro de rede'))
         xhr.open('PUT', signedUrl)
-        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
-        xhr.send(file)
+        // Não definir Content-Type: o browser define com o boundary do FormData
+        xhr.send(formData)
       })
 
       // 3. Salva a URL no banco
