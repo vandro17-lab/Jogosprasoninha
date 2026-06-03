@@ -792,12 +792,7 @@ export default function SuaHomenagem() {
               </motion.div>
 
               {/* Tributes */}
-              {loading ? (
-                <div className="flex flex-col items-center gap-3 py-12">
-                  <Loader2 size={28} color="#C9A84C" className="animate-spin" />
-                  <p className="text-text-muted text-sm">Carregando suas homenagens…</p>
-                </div>
-              ) : tributes.length === 0 ? (
+              {tributes.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
