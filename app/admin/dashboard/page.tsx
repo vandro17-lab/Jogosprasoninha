@@ -72,13 +72,17 @@ function ParticipantCard({
   p: Participant
   onDelete: (id: string) => void
   onApprove: (id: string, approved: boolean) => void
-  onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio' | 'videos'>>) => void
+  onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio' | 'videos' | 'parentesco'>>) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [approving, setApproving] = useState(false)
+
+  const [editingParentesco, setEditingParentesco] = useState(false)
+  const [editParentesco, setEditParentesco] = useState(p.parentesco)
+  const [savingParentesco, setSavingParentesco] = useState(false)
 
   const [editingMsg, setEditingMsg] = useState(false)
   const [editText, setEditText] = useState(p.mensagem ?? '')
@@ -122,6 +126,21 @@ function ParticipantCard({
       // silently revert
     } finally {
       setApproving(false)
+    }
+  }
+
+  async function handleSaveParentesco() {
+    setSavingParentesco(true)
+    try {
+      await fetch('/api/admin/update-participant', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ participantId: p.id, parentesco: editParentesco }),
+      })
+      onUpdate(p.id, { parentesco: editParentesco })
+      setEditingParentesco(false)
+    } finally {
+      setSavingParentesco(false)
     }
   }
 
@@ -230,7 +249,31 @@ function ParticipantCard({
               </div>
               <div>
                 <p className="font-semibold text-gray-800">{p.nome}</p>
-                <p className="text-xs text-gray-400 capitalize">{p.parentesco} da Sônia</p>
+                {editingParentesco ? (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <input
+                      autoFocus
+                      value={editParentesco}
+                      onChange={(e) => setEditParentesco(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSaveParentesco(); if (e.key === 'Escape') { setEditParentesco(p.parentesco); setEditingParentesco(false) } }}
+                      className="text-xs border border-blue-300 rounded-lg px-2 py-0.5 w-28 focus:outline-none focus:border-blue-400"
+                    />
+                    <button onClick={handleSaveParentesco} disabled={savingParentesco} className="text-blue-500 hover:text-blue-700 disabled:opacity-40">
+                      <Check size={13} />
+                    </button>
+                    <button onClick={() => { setEditParentesco(p.parentesco); setEditingParentesco(false) }} className="text-gray-300 hover:text-gray-500">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditParentesco(p.parentesco); setEditingParentesco(true) }}
+                    className="flex items-center gap-1 text-xs text-gray-400 capitalize hover:text-blue-500 transition-colors group"
+                  >
+                    {p.parentesco} da Sônia
+                    <Pencil size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                )}
               </div>
             </div>
 
