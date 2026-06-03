@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
@@ -14,6 +14,7 @@ interface Tribute {
   mensagem: string | null
   fotos: string[]
   audio: string | null
+  videos: string[]
 }
 
 /* ─── Audio player ─── */
@@ -222,6 +223,30 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
                 <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Recado de voz</span>
               </div>
               <AudioPlayer src={tribute.audio} nome={tribute.nome} />
+            </div>
+          )}
+
+          {/* Videos */}
+          {tribute.videos?.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <Video size={11} color="#C9A84C" />
+                <span className="text-xs text-text-muted font-medium uppercase tracking-wide">
+                  {tribute.videos.length === 1 ? 'Vídeo' : `${tribute.videos.length} vídeos`}
+                </span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {tribute.videos.map((url, i) => (
+                  <video
+                    key={i}
+                    controls
+                    playsInline
+                    src={url}
+                    className="w-full rounded-2xl bg-black"
+                    style={{ maxHeight: 280, boxShadow: '0 4px 16px rgba(61,50,40,0.15)' }}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>

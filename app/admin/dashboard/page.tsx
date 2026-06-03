@@ -249,6 +249,15 @@ function ParticipantCard({
     }
   }
 
+  async function handleDeleteVideo(videoUrl: string) {
+    await fetch('/api/admin/delete-video', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({ participantId: p.id, videoUrl }),
+    })
+    onUpdate(p.id, { videos: p.videos.filter((v) => v !== videoUrl) })
+  }
+
   const whatsappUrl = p.telefone
     ? `https://wa.me/55${p.telefone.replace(/\D/g, '')}`
     : null
@@ -569,13 +578,21 @@ function ParticipantCard({
                   {p.videos.length > 0 ? (
                     <div className="flex flex-col gap-3">
                       {p.videos.map((url, i) => (
-                        <video
-                          key={i}
-                          controls
-                          src={url}
-                          className="w-full rounded-xl bg-black"
-                          style={{ maxHeight: 220 }}
-                        />
+                        <div key={i} className="relative group">
+                          <video
+                            controls
+                            src={url}
+                            className="w-full rounded-xl bg-black"
+                            style={{ maxHeight: 220 }}
+                          />
+                          <button
+                            onClick={() => handleDeleteVideo(url)}
+                            title="Excluir vídeo"
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : (
