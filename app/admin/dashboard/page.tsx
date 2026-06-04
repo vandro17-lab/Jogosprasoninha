@@ -729,7 +729,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const saved = localStorage.getItem('sonia_phone')
-    if (saved) setSoniaPhone(saved)
+    setSoniaPhone(saved ?? '18981507556')
   }, [])
 
   function handleSoniaPhoneChange(val: string) {
