@@ -3,12 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, Type, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
-const FONT_SIZES = [13, 15, 17, 19, 21] // px — índice 1 é o padrão (15px)
-const FS_KEY = 'sonia-fontsize-idx'
 const THANK_YOU_MSG = 'Oi! Estou passando rapidinho para agradecer pela mensagem que você deixou para mim. Gostei muito do seu carinho e da sua lembrança. Que Deus abençoe você e sua família. ❤️'
 
 interface Tribute {
@@ -406,113 +404,8 @@ function VideoPlayer({ src }: { src: string }) {
   )
 }
 
-/* ─── Font size control ─── */
-function FontSizeControl({ idx, onChange }: { idx: number; onChange: (i: number) => void }) {
-  const min = 0
-  const max = FONT_SIZES.length - 1
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed bottom-6 left-1/2 z-40"
-      style={{ transform: 'translateX(-50%)', pointerEvents: 'auto' }}
-    >
-      <div
-        className="flex flex-col items-center gap-2 px-5 py-3.5 rounded-2xl"
-        style={{
-          background: 'rgba(253,252,250,0.97)',
-          border: '1px solid rgba(201,168,76,0.40)',
-          boxShadow: '0 2px 0 rgba(255,255,255,0.9) inset, 0 8px 32px -4px rgba(61,50,40,0.20)',
-          backdropFilter: 'blur(14px)',
-          minWidth: 240,
-        }}
-      >
-        {/* Label */}
-        <div className="flex items-center gap-1.5">
-          <Type size={11} color="#C9A84C" />
-          <span
-            className="text-xs font-medium uppercase tracking-widest"
-            style={{ color: '#A07830', letterSpacing: '0.14em' }}
-          >
-            Tamanho da letra
-          </span>
-        </div>
-
-        {/* Controls row */}
-        <div className="flex items-center gap-4">
-          {/* Decrease */}
-          <button
-            onClick={() => onChange(Math.max(min, idx - 1))}
-            disabled={idx === min}
-            className="flex flex-col items-center gap-0.5 transition-opacity disabled:opacity-30"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center"
-              style={{
-                background: idx === min
-                  ? 'rgba(201,168,76,0.06)'
-                  : 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(232,213,163,0.22) 100%)',
-                border: '1px solid rgba(201,168,76,0.28)',
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#A07830', lineHeight: 1 }}>A</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#A07830', marginLeft: 1, lineHeight: 1 }}>−</span>
-            </div>
-            <span className="text-xs" style={{ color: '#B89A50', fontSize: 10 }}>menor</span>
-          </button>
-
-          {/* Dots indicator */}
-          <div className="flex items-center gap-1.5">
-            {FONT_SIZES.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => onChange(i)}
-                style={{
-                  width: i === idx ? 18 : 7,
-                  height: 7,
-                  borderRadius: 4,
-                  background: i <= idx ? '#C9A84C' : 'rgba(201,168,76,0.20)',
-                  transition: 'all 0.25s ease',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Increase */}
-          <button
-            onClick={() => onChange(Math.min(max, idx + 1))}
-            disabled={idx === max}
-            className="flex flex-col items-center gap-0.5 transition-opacity disabled:opacity-30"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center"
-              style={{
-                background: idx === max
-                  ? 'rgba(201,168,76,0.06)'
-                  : 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(232,213,163,0.22) 100%)',
-                border: '1px solid rgba(201,168,76,0.28)',
-              }}
-            >
-              <span style={{ fontSize: 18, fontWeight: 800, color: '#A07830', lineHeight: 1 }}>A</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#A07830', marginLeft: 1, lineHeight: 1 }}>+</span>
-            </div>
-            <span className="text-xs" style={{ color: '#B89A50', fontSize: 10 }}>maior</span>
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
 /* ─── Tribute card ─── */
-function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: number; textSize: number }) {
+function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
   return (
@@ -556,12 +449,12 @@ function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: nu
                 <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Mensagem</span>
               </div>
               <p
-                className="text-text-dark leading-relaxed whitespace-pre-wrap"
+                className="text-text-dark whitespace-pre-wrap"
                 style={{
                   fontFamily: 'var(--font-playfair), Georgia, serif',
                   fontStyle: 'italic',
-                  fontSize: textSize,
-                  transition: 'font-size 0.25s ease',
+                  fontSize: 'clamp(22px, 2.8vw, 24px)',
+                  lineHeight: 1.6,
                 }}
               >
                 &ldquo;{tribute.mensagem}&rdquo;
@@ -1143,24 +1036,9 @@ export default function SuaHomenagem() {
   const [splashDone, setSplashDone] = useState(false)
   const [progress, setProgress] = useState(0)
   const [imgError, setImgError] = useState(false)
-  const [fontSizeIdx, setFontSizeIdx] = useState(1) // 15px default
   const tributesRef = useRef<HTMLDivElement>(null)
   const loadedRef = useRef(0)
   const totalRef = useRef(0)
-
-  // Carrega preferência salva
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem(FS_KEY) : null
-    if (saved !== null) {
-      const n = parseInt(saved, 10)
-      if (n >= 0 && n < FONT_SIZES.length) setFontSizeIdx(n)
-    }
-  }, [])
-
-  function handleFontSize(i: number) {
-    setFontSizeIdx(i)
-    localStorage.setItem(FS_KEY, String(i))
-  }
 
   useEffect(() => {
     async function loadAll() {
@@ -1257,13 +1135,6 @@ export default function SuaHomenagem() {
         {!revealed && <IntroScreen onReveal={handleReveal} />}
       </AnimatePresence>
 
-      {/* Controle de tamanho da letra — visível nas homenagens */}
-      <AnimatePresence>
-        {revealed && tributes.length > 0 && (
-          <FontSizeControl idx={fontSizeIdx} onChange={handleFontSize} />
-        )}
-      </AnimatePresence>
-
       {/* Tributes section */}
       <AnimatePresence>
         {revealed && (
@@ -1273,7 +1144,7 @@ export default function SuaHomenagem() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7 }}
-            className="min-h-screen flex flex-col items-center px-5 pb-32 relative overflow-hidden"
+            className="min-h-screen flex flex-col items-center px-5 pb-12 relative overflow-hidden"
           >
             {/* Background */}
             <div
@@ -1372,7 +1243,7 @@ export default function SuaHomenagem() {
               ) : (
                 <div className="w-full flex flex-col gap-5">
                   {tributes.map((t, i) => (
-                    <TributeCard key={t.id} tribute={t} index={i} textSize={FONT_SIZES[fontSizeIdx]} />
+                    <TributeCard key={t.id} tribute={t} index={i} />
                   ))}
                   <ClosingSection
                     contacts={tributes
