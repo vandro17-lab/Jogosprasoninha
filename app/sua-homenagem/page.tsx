@@ -9,15 +9,27 @@ import FloralOrnament from '@/components/FloralOrnament'
 
 const FONT_SIZES = [13, 15, 17, 19, 21] // px — índice 1 é o padrão (15px)
 const FS_KEY = 'sonia-fontsize-idx'
+const THANK_YOU_MSG = 'Oi! Estou passando rapidinho para agradecer pela mensagem que você deixou para mim. Gostei muito do seu carinho e da sua lembrança. Que Deus abençoe você e sua família. ❤️'
 
 interface Tribute {
   id: string
   nome: string
   parentesco: string
+  telefone: string | null
+  is_first: boolean
+  is_last: boolean
   mensagem: string | null
   fotos: string[]
   audio: string | null
   videos: string[]
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="#25D366" style={{ flexShrink: 0 }}>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+    </svg>
+  )
 }
 
 /* ─── Audio player ─── */
@@ -605,6 +617,219 @@ function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: nu
   )
 }
 
+/* ─── Closing section ─── */
+function ClosingSection({ contacts }: { contacts: { nome: string; telefone: string }[] }) {
+  return (
+    <div className="w-full flex flex-col gap-7">
+      {/* Decorative separator */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5))' }} />
+        <div className="flex items-center gap-1">
+          <Heart size={12} color="#C9A84C" fill="#C9A84C" />
+          <Heart size={18} color="#C9A84C" fill="#C9A84C" />
+          <Heart size={12} color="#C9A84C" fill="#C9A84C" />
+        </div>
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(201,168,76,0.5), transparent)' }} />
+      </div>
+
+      {/* Letter from Evandro */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative w-full"
+      >
+        <FloralOrnament position="tl" size={36} tone="gold" opacity={0.35} />
+        <FloralOrnament position="br" size={36} tone="gold" opacity={0.35} />
+        <div
+          className="relative p-6 rounded-3xl flex flex-col gap-5"
+          style={{
+            background: 'linear-gradient(135deg, rgba(253,252,250,0.97) 0%, rgba(247,237,216,0.65) 100%)',
+            border: '1px solid rgba(201,168,76,0.28)',
+            boxShadow: '0 2px 0 rgba(255,255,255,0.8) inset, 0 8px 32px -8px rgba(61,50,40,0.12)',
+          }}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-2xl">💝</span>
+            <h2
+              className="text-xl font-bold text-text-dark text-center"
+              style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
+            >
+              Agradecer com carinho
+            </h2>
+          </div>
+
+          <div
+            className="flex flex-col gap-3 text-text-dark leading-relaxed"
+            style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic', fontSize: 15 }}
+          >
+            <p>Mãezinha,</p>
+            <p>
+              Muitas das pessoas que estão aqui se dispuseram a participar porque gostam de você e quiseram
+              deixar um pedacinho de carinho neste dia tão especial.
+            </p>
+            <p>Cada mensagem, foto, vídeo e lembrança foi enviada com muito carinho.</p>
+            <p>
+              Se você quiser agradecer alguma dessas pessoas, abaixo estarão disponíveis os contatos de quem
+              autorizou compartilhar o WhatsApp.
+            </p>
+            <p>
+              Ao tocar no botão de uma pessoa, o WhatsApp será aberto automaticamente já com uma mensagem
+              de agradecimento pronta.
+            </p>
+            <p>
+              Você pode enviar exatamente como está, editar do seu jeito ou até mesmo não enviar agora.
+            </p>
+            <p>E não se preocupe: o intuito não é gerar trabalho nem obrigação.</p>
+            <p className="font-semibold" style={{ fontStyle: 'normal', color: '#5C4A32' }}>
+              O carinho já foi entregue.
+            </p>
+            <p>O agradecimento pode acontecer hoje, amanhã ou quando você sentir vontade.</p>
+          </div>
+
+          <div className="flex flex-col items-end gap-0.5 pt-1" style={{ borderTop: '1px solid rgba(232,213,163,0.4)' }}>
+            <p className="text-sm text-text-muted" style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic' }}>
+              Com amor,
+            </p>
+            <p className="text-lg font-bold text-text-dark" style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}>
+              Evandro ❤️
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* WhatsApp section — only if there are contacts */}
+      {contacts.length > 0 && (
+        <>
+          {/* How it works */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="rounded-2xl p-4 flex flex-col gap-3"
+            style={{
+              background: 'rgba(232,213,163,0.18)',
+              border: '1px solid rgba(201,168,76,0.25)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">ℹ️</span>
+              <p className="text-sm font-semibold text-text-dark">Como funciona?</p>
+            </div>
+            <div className="flex flex-col gap-1.5 text-sm text-text-muted leading-relaxed">
+              <p>Ao tocar em <span className="font-medium text-text-dark">&ldquo;Enviar agradecimento&rdquo;</span>, o WhatsApp abrirá com a mensagem já pronta.</p>
+              <ul className="flex flex-col gap-1 mt-1">
+                <li>• Você pode enviar como está</li>
+                <li>• Pode editar o texto antes</li>
+                <li>• Pode fechar sem enviar nada</li>
+              </ul>
+              <p className="font-semibold text-text-dark mt-1">Nada será enviado automaticamente.</p>
+            </div>
+          </motion.div>
+
+          {/* Message preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="flex flex-col gap-2"
+          >
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <MessageSquare size={11} color="#C9A84C" />
+              <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Mensagem que será enviada</span>
+            </div>
+            <div
+              className="rounded-2xl px-5 py-4"
+              style={{
+                background: 'rgba(255,253,249,0.9)',
+                border: '1px solid rgba(201,168,76,0.30)',
+                boxShadow: '0 2px 0 rgba(255,255,255,0.8) inset',
+              }}
+            >
+              <p
+                className="text-text-dark text-sm leading-relaxed"
+                style={{ fontFamily: 'var(--font-playfair), Georgia, serif', fontStyle: 'italic' }}
+              >
+                &ldquo;{THANK_YOU_MSG}&rdquo;
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Contacts */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="flex flex-col gap-3"
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <Heart size={11} color="#C9A84C" fill="#C9A84C" />
+              <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Toque para agradecer</span>
+            </div>
+            {contacts.map((c) => {
+              const phone = c.telefone.replace(/\D/g, '')
+              const waUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(THANK_YOU_MSG)}`
+              return (
+                <motion.a
+                  key={c.telefone}
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                  className="flex items-center gap-4 rounded-2xl px-5 py-4"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(253,252,250,0.98) 0%, rgba(247,237,216,0.55) 100%)',
+                    border: '1px solid rgba(201,168,76,0.32)',
+                    boxShadow: '0 2px 0 rgba(255,255,255,0.8) inset, 0 5px 18px -5px rgba(61,50,40,0.12)',
+                    textDecoration: 'none',
+                    display: 'flex',
+                  }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                      background: 'rgba(37,211,102,0.10)',
+                      border: '1.5px solid rgba(37,211,102,0.30)',
+                    }}
+                  >
+                    <WhatsAppIcon />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-text-dark text-base leading-tight">{c.nome}</p>
+                    <p className="text-text-muted text-sm mt-0.5">Enviar agradecimento</p>
+                  </div>
+                  <ChevronRight size={20} color="#C9A84C" style={{ flexShrink: 0 }} />
+                </motion.a>
+              )
+            })}
+          </motion.div>
+        </>
+      )}
+
+      {/* Final note */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="flex flex-col items-center gap-3 pt-2 pb-8"
+      >
+        <div className="flex items-center gap-1.5">
+          <Heart size={12} color="#C9A84C" fill="#C9A84C" />
+          <Heart size={20} color="#C9A84C" fill="#C9A84C" />
+          <Heart size={12} color="#C9A84C" fill="#C9A84C" />
+        </div>
+        <p className="text-text-muted text-sm text-center leading-relaxed px-4">
+          Feito com muito amor para você, Sônia 🌸
+        </p>
+        <p className="text-xs text-center" style={{ color: 'rgba(139,115,85,0.45)' }}>
+          Este momento foi preparado especialmente para você.
+        </p>
+      </motion.div>
+    </div>
+  )
+}
+
 /* ─── Splash screen com progresso real ─── */
 function SplashScreen({ progress }: { progress: number }) {
   const [imgErr, setImgErr] = useState(false)
@@ -1149,17 +1374,11 @@ export default function SuaHomenagem() {
                   {tributes.map((t, i) => (
                     <TributeCard key={t.id} tribute={t} index={i} textSize={FONT_SIZES[fontSizeIdx]} />
                   ))}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: tributes.length * 0.1 + 0.4 }}
-                    className="flex flex-col items-center gap-2 pt-6 pb-4"
-                  >
-                    <Heart size={20} color="#C9A84C" fill="#C9A84C" />
-                    <p className="text-text-muted text-xs text-center leading-relaxed">
-                      Feito com muito amor para você, Sônia 🌸
-                    </p>
-                  </motion.div>
+                  <ClosingSection
+                    contacts={tributes
+                      .filter((t) => t.telefone)
+                      .map((t) => ({ nome: t.nome, telefone: t.telefone! }))}
+                  />
                 </div>
               )}
             </div>

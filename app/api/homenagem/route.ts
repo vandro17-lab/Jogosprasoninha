@@ -29,11 +29,23 @@ export async function GET() {
     id: p.id,
     nome: p.nome,
     parentesco: p.parentesco,
+    telefone: p.telefone ?? null,
+    is_first: p.is_first ?? false,
+    is_last: p.is_last ?? false,
     mensagem: (memories ?? []).find((m) => m.participant_id === p.id)?.memoria_bruta ?? null,
     fotos: (photos ?? []).filter((ph) => ph.participant_id === p.id).map((ph) => ph.photo_url),
     audio: (audios ?? []).find((a) => a.participant_id === p.id && a.tipo === 'final')?.audio_url ?? null,
     videos: (videos ?? []).filter((v) => v.participant_id === p.id).map((v) => v.video_url),
   }))
 
-  return NextResponse.json({ participants: result })
+  // Ordering: is_first first, then by created_at (already sorted), then is_last last
+  const sorted = [...result].sort((a, b) => {
+    if (a.is_first && !b.is_first) return -1
+    if (!a.is_first && b.is_first) return 1
+    if (a.is_last && !b.is_last) return 1
+    if (!a.is_last && b.is_last) return -1
+    return 0
+  })
+
+  return NextResponse.json({ participants: sorted })
 }

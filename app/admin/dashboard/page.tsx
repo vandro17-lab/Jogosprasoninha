@@ -16,6 +16,8 @@ interface Participant {
   telefone: string | null
   created_at: string
   approved: boolean
+  is_first: boolean
+  is_last: boolean
   mensagem: string | null
   fotos: string[]
   audio: string | null
@@ -68,11 +70,13 @@ function ParticipantCard({
   onDelete,
   onApprove,
   onUpdate,
+  onSetPosition,
 }: {
   p: Participant
   onDelete: (id: string) => void
   onApprove: (id: string, approved: boolean) => void
   onUpdate: (id: string, updates: Partial<Pick<Participant, 'mensagem' | 'fotos' | 'audio' | 'videos' | 'parentesco'>>) => void
+  onSetPosition: (id: string, position: 'first' | 'last' | 'none') => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
@@ -258,6 +262,15 @@ function ParticipantCard({
     onUpdate(p.id, { videos: p.videos.filter((v) => v !== videoUrl) })
   }
 
+  async function handleSetPosition(position: 'first' | 'last' | 'none') {
+    await fetch('/api/admin/set-position', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({ participantId: p.id, position }),
+    })
+    onSetPosition(p.id, position)
+  }
+
   const whatsappUrl = p.telefone
     ? `https://wa.me/55${p.telefone.replace(/\D/g, '')}`
     : null
@@ -281,6 +294,22 @@ function ParticipantCard({
           >
             <CheckCircle2 size={12} />
             Aprovado — aparecerá na página da Sônia
+          </div>
+        )}
+        {p.is_first && (
+          <div
+            className="px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium"
+            style={{ background: 'rgba(201,168,76,0.10)', color: '#92700A', borderBottom: '1px solid rgba(201,168,76,0.18)' }}
+          >
+            ⭐ Primeira mensagem exibida
+          </div>
+        )}
+        {p.is_last && (
+          <div
+            className="px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium"
+            style={{ background: 'rgba(139,92,246,0.08)', color: '#6d28d9', borderBottom: '1px solid rgba(139,92,246,0.15)' }}
+          >
+            🌟 Última mensagem exibida
           </div>
         )}
 
@@ -604,6 +633,34 @@ function ParticipantCard({
                     <p className="text-xs text-gray-300 italic">Sem vídeos</p>
                   )}
                 </div>
+
+                {/* Posição na homenagem */}
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Posição na homenagem</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleSetPosition(p.is_first ? 'none' : 'first')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                      style={p.is_first
+                        ? { background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.40)', color: '#92700A' }
+                        : { background: 'transparent', border: '1px solid rgb(229,231,235)', color: '#9ca3af' }}
+                    >
+                      ⭐ {p.is_first ? 'Primeira ✓ (clique para remover)' : 'Definir como primeira'}
+                    </button>
+                    <button
+                      onClick={() => handleSetPosition(p.is_last ? 'none' : 'last')}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                      style={p.is_last
+                        ? { background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.32)', color: '#6d28d9' }
+                        : { background: 'transparent', border: '1px solid rgb(229,231,235)', color: '#9ca3af' }}
+                    >
+                      🌟 {p.is_last ? 'Última ✓ (clique para remover)' : 'Definir como última'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-300 mt-1.5">
+                    Apenas uma mensagem pode ser marcada como primeira e uma como última.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -645,7 +702,7 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/data', { headers: { Authorization: `Bearer ${token}` } })
       if (res.status === 401) { localStorage.removeItem('admin_token'); router.replace('/admin'); return }
       const data = await res.json()
-      setParticipants((data.participants ?? []).map((p: Participant) => ({ ...p, videos: p.videos ?? [] })))
+      setParticipants((data.participants ?? []).map((p: Participant) => ({ ...p, videos: p.videos ?? [], is_first: p.is_first ?? false, is_last: p.is_last ?? false })))
     } catch {
       setError('Erro ao carregar os dados.')
     } finally {
@@ -654,6 +711,18 @@ export default function AdminDashboard() {
   }, [router])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  function handleSetPosition(id: string, position: 'first' | 'last' | 'none') {
+    setParticipants((prev) => prev.map((x) => {
+      if (position === 'first') {
+        return x.id === id ? { ...x, is_first: true, is_last: false } : { ...x, is_first: false }
+      } else if (position === 'last') {
+        return x.id === id ? { ...x, is_last: true, is_first: false } : { ...x, is_last: false }
+      } else {
+        return x.id === id ? { ...x, is_first: false, is_last: false } : x
+      }
+    }))
+  }
 
   function handleLogout() {
     localStorage.removeItem('admin_token')
@@ -714,6 +783,7 @@ export default function AdminDashboard() {
             onDelete={(id) => setParticipants((prev) => prev.filter((x) => x.id !== id))}
             onApprove={(id, approved) => setParticipants((prev) => prev.map((x) => x.id === id ? { ...x, approved } : x))}
             onUpdate={(id, updates) => setParticipants((prev) => prev.map((x) => x.id === id ? { ...x, ...updates } : x))}
+            onSetPosition={handleSetPosition}
           />
         ))}
       </div>
