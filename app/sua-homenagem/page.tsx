@@ -71,7 +71,7 @@ function AudioPlayer({ src, nome }: { src: string; nome: string }) {
           />
         </div>
       </div>
-      {duration > 0 && (
+      {duration > 0 && isFinite(duration) && (
         <span className="text-xs text-text-muted shrink-0">{fmt(duration)}</span>
       )}
     </div>
@@ -241,18 +241,17 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
                     key={i}
                     className="relative w-full overflow-hidden"
                     style={{
-                      height: 360,
                       borderRadius: 20,
                       border: '1px solid rgba(201,168,76,0.28)',
                       boxShadow: '0 2px 0 rgba(255,255,255,0.7) inset, 0 8px 28px rgba(61,50,40,0.16)',
+                      background: '#0d0806',
                     }}
                   >
                     <video
                       controls
                       playsInline
                       src={url}
-                      className="w-full h-full"
-                      style={{ objectFit: 'cover', display: 'block' }}
+                      style={{ width: '100%', display: 'block' }}
                     />
                   </div>
                 ))}
@@ -615,17 +614,17 @@ export default function SuaHomenagem() {
       }
       setTributes(participants)
 
-      // 2. Coleta todas as URLs de mídia
-      const photoUrls = participants.flatMap((p) => p.fotos ?? [])
+      // 2. Coleta todas as URLs de mídia (incluindo assets da IntroScreen)
+      const photoUrls = [
+        '/sonia.jpg',                                                    // fundo da IntroScreen
+        ...participants.flatMap((p) => p.fotos ?? []),
+      ]
       const audioUrls = participants.filter((p) => p.audio).map((p) => p.audio as string)
-      const videoUrls = participants.flatMap((p) => p.videos ?? [])
+      const videoUrls = [
+        '/video.mp4',                                                    // vídeo da IntroScreen
+        ...participants.flatMap((p) => p.videos ?? []),
+      ]
       const total = photoUrls.length + audioUrls.length + videoUrls.length
-
-      if (total === 0) {
-        setProgress(100)
-        setSplashDone(true)
-        return
-      }
 
       totalRef.current = total
       loadedRef.current = 0
