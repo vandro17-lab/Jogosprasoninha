@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, X, ChevronLeft, ChevronRight, Maximize2, Share2 } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
@@ -194,6 +194,35 @@ function Lightbox({ fotos, startIdx, onClose }: { fotos: string[]; startIdx: num
     else if (delta < -55) prev()
   }
 
+  async function handleSharePhoto() {
+    const url = fotos[idx]
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const file = new File([blob], 'foto-sonia.jpg', { type: blob.type || 'image/jpeg' })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Homenagem da Sônia 🎂' })
+        return
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+    }
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: window.location.href, title: 'Homenagem da Sônia 🎂' })
+        return
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+    }
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'foto-sonia.jpg'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -204,9 +233,24 @@ function Lightbox({ fotos, startIdx, onClose }: { fotos: string[]; startIdx: num
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 shrink-0">
-        {fotos.length > 1 ? (
-          <span className="text-white/55 text-sm font-medium">{idx + 1} de {fotos.length}</span>
-        ) : <span />}
+        <div className="flex items-center gap-3">
+          {fotos.length > 1 && (
+            <span className="text-white/55 text-sm font-medium">{idx + 1} de {fotos.length}</span>
+          )}
+          <button
+            onClick={handleSharePhoto}
+            className="flex items-center gap-1.5 rounded-full font-medium text-sm active:scale-95 transition-transform"
+            style={{
+              background: 'rgba(201,168,76,0.18)',
+              border: '1px solid rgba(201,168,76,0.4)',
+              color: '#F0D88A',
+              padding: '8px 14px',
+            }}
+          >
+            <Share2 size={14} />
+            <span>Compartilhar</span>
+          </button>
+        </div>
         <button
           onClick={onClose}
           className="flex items-center gap-2 rounded-full font-semibold text-sm active:scale-95 transition-transform"
@@ -319,6 +363,23 @@ function VideoPlayer({ src }: { src: string }) {
     v.play().catch(() => setHasStarted(false))
   }
 
+  async function handleShareVideo() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: window.location.href, title: 'Homenagem da Sônia 🎂' })
+        return
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+    }
+    const a = document.createElement('a')
+    a.href = src
+    a.download = 'video-sonia.mp4'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   return (
     <div className="flex flex-col gap-2.5">
       <div
@@ -400,6 +461,23 @@ function VideoPlayer({ src }: { src: string }) {
           Use os controles abaixo do vídeo para pausar ou colocar em tela cheia
         </motion.p>
       )}
+
+      {/* Compartilhar */}
+      <div className="flex justify-center">
+        <button
+          onClick={handleShareVideo}
+          className="flex items-center gap-1.5 rounded-full text-xs active:scale-95 transition-transform"
+          style={{
+            background: 'rgba(201,168,76,0.12)',
+            border: '1px solid rgba(201,168,76,0.32)',
+            color: '#C9A84C',
+            padding: '7px 14px',
+          }}
+        >
+          <Share2 size={13} />
+          <span>Compartilhar</span>
+        </button>
+      </div>
     </div>
   )
 }
@@ -723,6 +801,49 @@ function ClosingSection({ contacts }: { contacts: { nome: string; telefone: stri
   )
 }
 
+/* ─── Tela de erro de carregamento ─── */
+function LoadFailedScreen() {
+  return (
+    <motion.div
+      key="load-failed"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center"
+      style={{ background: 'radial-gradient(ellipse at 50% 40%, #FDFCFA 0%, #FBF0F0 50%, #F7EDD8 100%)' }}
+    >
+      <FloralOrnament position="tl" size={60} tone="gold" opacity={0.3} />
+      <FloralOrnament position="br" size={60} tone="gold" opacity={0.3} />
+
+      <div className="relative z-10 flex flex-col items-center gap-8 max-w-xs">
+        <span className="text-5xl">🌸</span>
+
+        <div className="flex flex-col gap-3">
+          <h2
+            className="text-xl font-bold text-text-dark"
+            style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
+          >
+            Um momento...
+          </h2>
+          <p className="text-text-muted text-base leading-relaxed">
+            Tivemos um probleminha para carregar sua homenagem. Toque no botão abaixo para tentar novamente.
+          </p>
+        </div>
+
+        <button
+          onClick={() => window.location.reload()}
+          className="w-full py-4 rounded-2xl font-semibold text-white text-base active:scale-95 transition-transform"
+          style={{
+            background: 'linear-gradient(135deg, #D9B95C 0%, #C9A84C 100%)',
+            boxShadow: '0 4px 24px rgba(201,168,76,0.45)',
+          }}
+        >
+          Tentar novamente
+        </button>
+      </div>
+    </motion.div>
+  )
+}
+
 /* ─── Splash screen com progresso real ─── */
 function SplashScreen({ progress }: { progress: number }) {
   const [imgErr, setImgErr] = useState(false)
@@ -758,7 +879,7 @@ function SplashScreen({ progress }: { progress: number }) {
             boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 4px 12px -4px rgba(201,168,76,0.25)',
           }}
         >
-          🎂 59 anos · 3 de junho
+          🎂 59 anos · 4 de junho
         </motion.div>
 
         {/* Photo */}
@@ -915,26 +1036,15 @@ function GiftButton({ onClick }: { onClick: () => void }) {
 /* ─── Intro screen (video or photo) ─── */
 function IntroScreen({ onReveal }: { onReveal: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [videoEnded, setVideoEnded] = useState(false)
-  const [videoError, setVideoError] = useState(false)
   const [showButton, setShowButton] = useState(false)
 
-  // Show button after video ends, or after 1.5s if no video
-  useEffect(() => {
-    if (videoError) {
-      const t = setTimeout(() => setShowButton(true), 1500)
-      return () => clearTimeout(t)
-    }
-  }, [videoError])
-
   function handleVideoEnded() {
-    setVideoEnded(true)
     setShowButton(true)
   }
 
-  // Also show button after 12s max even if video is still playing
+  // Show button after 5s max even if video is still playing
   useEffect(() => {
-    const t = setTimeout(() => setShowButton(true), 12000)
+    const t = setTimeout(() => setShowButton(true), 5000)
     return () => clearTimeout(t)
   }, [])
 
@@ -947,32 +1057,27 @@ function IntroScreen({ onReveal }: { onReveal: () => void }) {
       transition={{ duration: 0.8 }}
       className="fixed inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Video background */}
-      {!videoError && (
-        <video
-          ref={videoRef}
-          src="/video.mp4"
-          autoPlay
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          onEnded={handleVideoEnded}
-          onError={() => setVideoError(true)}
+      {/* Photo base layer — always visible; shows through if video autoplay is blocked */}
+      <div className="absolute inset-0">
+        <Image
+          src="/sonia.jpg"
+          alt="Sônia"
+          fill
+          className="object-cover object-top"
+          priority
         />
-      )}
+      </div>
 
-      {/* Photo fallback (shown when no video) */}
-      {videoError && (
-        <div className="absolute inset-0">
-          <Image
-            src="/sonia.jpg"
-            alt="Sônia"
-            fill
-            className="object-cover object-top"
-            priority
-          />
-        </div>
-      )}
+      {/* Video overlay — on top of the photo */}
+      <video
+        ref={videoRef}
+        src="/video.mp4"
+        autoPlay
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        onEnded={handleVideoEnded}
+      />
 
       {/* Cinematic overlay */}
       <div
@@ -1035,17 +1140,24 @@ export default function SuaHomenagem() {
   const [tributes, setTributes] = useState<Tribute[]>([])
   const [splashDone, setSplashDone] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [imgError, setImgError] = useState(false)
   const tributesRef = useRef<HTMLDivElement>(null)
   const loadedRef = useRef(0)
   const totalRef = useRef(0)
 
   useEffect(() => {
+    // Global 25s safety timer — if still loading, show friendly error instead of hanging forever
+    const globalTimer = setTimeout(() => setLoadFailed(true), 25000)
+
     async function loadAll() {
-      // 1. Busca os dados
+      // 1. Fetch with 8s timeout
       let participants: Tribute[] = []
       try {
-        const res = await fetch('/api/homenagem')
+        const controller = new AbortController()
+        const fetchTimeout = setTimeout(() => controller.abort(), 8000)
+        const res = await fetch('/api/homenagem', { signal: controller.signal })
+        clearTimeout(fetchTimeout)
         const data = await res.json()
         participants = data.participants ?? []
       } catch {
@@ -1053,16 +1165,13 @@ export default function SuaHomenagem() {
       }
       setTributes(participants)
 
-      // 2. Coleta todas as URLs de mídia (incluindo assets da IntroScreen)
+      // 2. Media URLs — participant videos excluded (large, load lazily in VideoPlayer)
       const photoUrls = [
-        '/sonia.jpg',                                                    // fundo da IntroScreen
+        '/sonia.jpg',
         ...participants.flatMap((p) => p.fotos ?? []),
       ]
       const audioUrls = participants.filter((p) => p.audio).map((p) => p.audio as string)
-      const videoUrls = [
-        '/video.mp4',                                                    // vídeo da IntroScreen
-        ...participants.flatMap((p) => p.videos ?? []),
-      ]
+      const videoUrls = ['/video.mp4']
       const total = photoUrls.length + audioUrls.length + videoUrls.length
 
       totalRef.current = total
@@ -1073,20 +1182,19 @@ export default function SuaHomenagem() {
         const pct = Math.round((loadedRef.current / totalRef.current) * 100)
         setProgress(pct)
         if (loadedRef.current >= totalRef.current) {
-          // Breve pausa para a Sônia ver o 100% antes de fechar
+          clearTimeout(globalTimer)
           setTimeout(() => setSplashDone(true), 400)
         }
       }
 
       function preload(src: string, type: 'image' | 'audio' | 'video') {
-        // Timeout de segurança: 20s por recurso para não travar para sempre
         let settled = false
         const settle = () => {
           if (settled) return
           settled = true
           onItemLoaded()
         }
-        const timeout = setTimeout(settle, 20000)
+        const timeout = setTimeout(settle, 8000)
 
         if (type === 'image') {
           const img = new window.Image()
@@ -1113,7 +1221,8 @@ export default function SuaHomenagem() {
       videoUrls.forEach((url) => preload(url, 'video'))
     }
 
-    loadAll().catch(() => { setProgress(100); setSplashDone(true) })
+    loadAll().catch(() => { clearTimeout(globalTimer); setProgress(100); setSplashDone(true) })
+    return () => clearTimeout(globalTimer)
   }, [])
 
   function handleReveal() {
@@ -1127,7 +1236,12 @@ export default function SuaHomenagem() {
     <div className="min-h-screen relative overflow-x-hidden">
       {/* Splash de carregamento */}
       <AnimatePresence>
-        {!splashDone && <SplashScreen progress={progress} />}
+        {!splashDone && !loadFailed && <SplashScreen progress={progress} />}
+      </AnimatePresence>
+
+      {/* Error screen */}
+      <AnimatePresence>
+        {loadFailed && <LoadFailedScreen />}
       </AnimatePresence>
 
       {/* Intro screen */}
