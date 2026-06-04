@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, X, ChevronLeft, ChevronRight, Maximize2, Share2 } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, X, ChevronLeft, ChevronRight, Maximize2, Share2, Download } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
@@ -360,6 +360,8 @@ function Lightbox({ fotos, startIdx, onClose }: { fotos: string[]; startIdx: num
 function VideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hasStarted, setHasStarted] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [shareResult, setShareResult] = useState<'idle' | 'fallback'>('idle')
 
   function handlePlayClick() {
     const v = videoRef.current
@@ -369,24 +371,73 @@ function VideoPlayer({ src }: { src: string }) {
   }
 
   async function handleShareVideo() {
+    setSharing(true)
+    setShareResult('idle')
+
+    // Passo 1: busca o arquivo de vídeo como blob (só quando a pessoa toca em compartilhar)
+    let file: File | null = null
     try {
-      if (navigator.share) {
-        await navigator.share({ url: window.location.href, title: 'Homenagem da Sônia 🎂' })
+      const controller = new AbortController()
+      const fetchTimeout = setTimeout(() => controller.abort(), 30000)
+      const response = await fetch(src, { signal: controller.signal })
+      clearTimeout(fetchTimeout)
+      const blob = await response.blob()
+      file = new File([blob], 'homenagem-sonia.mp4', { type: blob.type || 'video/mp4' })
+    } catch {
+      setShareResult('fallback')
+      setSharing(false)
+      return
+    }
+
+    // Passo 2: tenta compartilhar o arquivo via Web Share API (Android nativo)
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Homenagem da Sônia 🎂',
+          text: 'Um presente especial para você! 🌸',
+        })
+        setSharing(false)
+        return
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // Pessoa cancelou o menu nativo — silencioso
+          setSharing(false)
+          return
+        }
+        setShareResult('fallback')
+        setSharing(false)
         return
       }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return
     }
+
+    // Passo 3: navegador não suporta file share — mostra fallback com download
+    setShareResult('fallback')
+    setSharing(false)
+  }
+
+  function handleDownloadVideo() {
     const a = document.createElement('a')
     a.href = src
-    a.download = 'video-sonia.mp4'
+    a.download = 'homenagem-sonia.mp4'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
   }
 
+  async function handleShareLink() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: window.location.href, title: 'Homenagem da Sônia 🎂' })
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
+      {/* Player */}
       <div
         className="relative w-full overflow-hidden"
         style={{
@@ -422,7 +473,6 @@ function VideoPlayer({ src }: { src: string }) {
                 transition={{ type: 'spring', stiffness: 400, damping: 18 }}
                 className="flex flex-col items-center gap-3"
               >
-                {/* Glow */}
                 <div className="relative">
                   <div
                     className="absolute -inset-4 rounded-full animate-pulse opacity-50"
@@ -467,22 +517,93 @@ function VideoPlayer({ src }: { src: string }) {
         </motion.p>
       )}
 
-      {/* Compartilhar */}
-      <div className="flex justify-center">
-        <button
-          onClick={handleShareVideo}
-          className="flex items-center gap-1.5 rounded-full text-xs active:scale-95 transition-transform"
+      {/* Área de compartilhamento e download */}
+      {sharing ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center justify-center gap-2.5 rounded-2xl py-4"
           style={{
-            background: 'rgba(201,168,76,0.12)',
-            border: '1px solid rgba(201,168,76,0.32)',
-            color: '#C9A84C',
-            padding: '7px 14px',
+            background: 'rgba(201,168,76,0.08)',
+            border: '1px solid rgba(201,168,76,0.22)',
           }}
         >
-          <Share2 size={13} />
-          <span>Compartilhar</span>
-        </button>
-      </div>
+          <Loader2 size={15} color="#C9A84C" className="animate-spin" />
+          <span className="text-sm" style={{ color: '#A07830' }}>
+            Preparando o vídeo para compartilhar...
+          </span>
+        </motion.div>
+      ) : shareResult === 'fallback' ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-3"
+        >
+          <div
+            className="rounded-2xl px-4 py-3 text-sm text-center leading-relaxed"
+            style={{
+              background: 'rgba(247,237,216,0.55)',
+              border: '1px solid rgba(201,168,76,0.22)',
+              color: '#5C4A32',
+            }}
+          >
+            Não consegui abrir o compartilhamento automático neste celular.
+            Baixe o vídeo e poste pelo WhatsApp ou Instagram. 🌸
+          </div>
+          <button
+            onClick={handleDownloadVideo}
+            className="flex items-center justify-center gap-2 rounded-2xl font-semibold text-white text-sm active:scale-95 transition-transform w-full"
+            style={{
+              background: 'linear-gradient(135deg, #D9B95C 0%, #C9A84C 100%)',
+              boxShadow: '0 4px 14px rgba(201,168,76,0.35)',
+              padding: '14px 20px',
+            }}
+          >
+            <Download size={16} />
+            <span>Baixar vídeo</span>
+          </button>
+          <button
+            onClick={handleShareLink}
+            className="text-center text-xs active:scale-95 transition-transform py-2"
+            style={{ color: 'rgba(139,115,85,0.60)' }}
+          >
+            Ou compartilhar o link desta homenagem
+          </button>
+        </motion.div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <button
+              onClick={handleShareVideo}
+              className="flex-1 flex items-center justify-center gap-2 rounded-2xl font-semibold text-white text-sm active:scale-95 transition-transform"
+              style={{
+                background: 'linear-gradient(135deg, #D9B95C 0%, #C9A84C 100%)',
+                boxShadow: '0 4px 14px rgba(201,168,76,0.30)',
+                padding: '13px 16px',
+              }}
+            >
+              <Share2 size={15} />
+              <span>Compartilhar vídeo</span>
+            </button>
+            <button
+              onClick={handleDownloadVideo}
+              className="flex items-center justify-center gap-1.5 rounded-2xl font-medium text-sm active:scale-95 transition-transform"
+              style={{
+                background: 'rgba(201,168,76,0.10)',
+                border: '1px solid rgba(201,168,76,0.30)',
+                color: '#C9A84C',
+                padding: '13px 14px',
+              }}
+            >
+              <Download size={14} />
+              <span>Baixar</span>
+            </button>
+          </div>
+          <p className="text-center text-xs" style={{ color: 'rgba(139,115,85,0.60)' }}>
+            Escolha WhatsApp, Status ou Instagram para postar
+          </p>
+        </div>
+      )}
     </div>
   )
 }
