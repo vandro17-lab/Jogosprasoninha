@@ -36,7 +36,7 @@ function WhatsAppIcon() {
 }
 
 /* ─── Audio player ─── */
-function AudioPlayer({ src, nome }: { src: string; nome: string }) {
+function AudioPlayer({ src, nome, onAudioStart }: { src: string; nome: string; onAudioStart: (stop: () => void) => void }) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -45,8 +45,14 @@ function AudioPlayer({ src, nome }: { src: string; nome: string }) {
   function toggle() {
     const el = audioRef.current
     if (!el) return
-    if (playing) { el.pause() } else { el.play() }
-    setPlaying(!playing)
+    if (playing) {
+      el.pause()
+      setPlaying(false)
+    } else {
+      onAudioStart(() => { el.pause(); setPlaying(false) })
+      el.play()
+      setPlaying(true)
+    }
   }
 
   function fmt(s: number) {
@@ -668,7 +674,7 @@ function VideoPlayer({ src }: { src: string }) {
 }
 
 /* ─── Tribute card ─── */
-function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
+function TributeCard({ tribute, index, onAudioStart }: { tribute: Tribute; index: number; onAudioStart: (stop: () => void) => void }) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
   return (
@@ -737,7 +743,7 @@ function TributeCard({ tribute, index }: { tribute: Tribute; index: number }) {
                 <Music2 size={11} color="#C9A84C" />
                 <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Recado de voz</span>
               </div>
-              <AudioPlayer src={tribute.audio} nome={tribute.nome} />
+              <AudioPlayer src={tribute.audio} nome={tribute.nome} onAudioStart={onAudioStart} />
             </div>
           )}
 
@@ -1733,6 +1739,12 @@ export default function SuaHomenagem() {
   const tributesRef = useRef<HTMLDivElement>(null)
   const loadedRef = useRef(0)
   const totalRef = useRef(0)
+  const stopCurrentAudioRef = useRef<(() => void) | null>(null)
+
+  function handleAudioStart(stop: () => void) {
+    if (stopCurrentAudioRef.current) stopCurrentAudioRef.current()
+    stopCurrentAudioRef.current = stop
+  }
 
   useEffect(() => {
     // Global 25s safety timer — if still loading, show friendly error instead of hanging forever
@@ -1946,7 +1958,7 @@ export default function SuaHomenagem() {
                 <div className="w-full flex flex-col gap-5">
                   <EvandroCard />
                   {tributes.map((t, i) => (
-                    <TributeCard key={t.id} tribute={t} index={i} />
+                    <TributeCard key={t.id} tribute={t} index={i} onAudioStart={handleAudioStart} />
                   ))}
                   <PhotoGallery tributes={tributes} />
                   <ClosingSection
