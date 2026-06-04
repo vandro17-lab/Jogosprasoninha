@@ -22,6 +22,11 @@ interface Tribute {
   videos: string[]
 }
 
+interface GalleryPhoto {
+  url: string
+  nome: string
+}
+
 function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="#25D366" style={{ flexShrink: 0 }}>
@@ -801,6 +806,409 @@ function ClosingSection({ contacts }: { contacts: { nome: string; telefone: stri
   )
 }
 
+/* ─── Card especial do Evandro ─── */
+function EvandroCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.75, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+      className="relative w-full"
+    >
+      <FloralOrnament position="tl" size={42} tone="gold" opacity={0.45} />
+      <FloralOrnament position="br" size={42} tone="gold" opacity={0.45} />
+      <div
+        className="relative p-6 rounded-3xl flex flex-col gap-5"
+        style={{
+          background: 'linear-gradient(145deg, rgba(253,252,250,0.97) 0%, rgba(248,240,220,0.78) 100%)',
+          border: '1.5px solid rgba(201,168,76,0.40)',
+          boxShadow: '0 2px 0 rgba(255,255,255,0.88) inset, 0 12px 40px -8px rgba(61,50,40,0.15)',
+        }}
+      >
+        {/* Rótulo superior */}
+        <div className="flex justify-center">
+          <div
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium tracking-widest uppercase"
+            style={{
+              background: 'linear-gradient(135deg, rgba(201,168,76,0.14) 0%, rgba(232,213,163,0.32) 100%)',
+              border: '1px solid rgba(201,168,76,0.38)',
+              color: '#A07830',
+            }}
+          >
+            <Heart size={11} color="#C9A84C" fill="#C9A84C" />
+            <span>Uma mensagem do seu filho</span>
+            <Heart size={11} color="#C9A84C" fill="#C9A84C" />
+          </div>
+        </div>
+
+        {/* Divisor decorativo */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.45))' }} />
+          <Heart size={14} color="#C9A84C" fill="#C9A84C" />
+          <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(201,168,76,0.45), transparent)' }} />
+        </div>
+
+        {/* Texto da carta */}
+        <div
+          className="rounded-2xl px-5 py-4"
+          style={{ background: 'rgba(255,253,249,0.85)', border: '1px solid rgba(232,213,163,0.38)' }}
+        >
+          <div className="flex items-center gap-1.5 mb-3">
+            <MessageSquare size={11} color="#C9A84C" />
+            <span className="text-xs text-text-muted font-medium uppercase tracking-wide">Mensagem</span>
+          </div>
+          <p
+            className="text-text-dark"
+            style={{
+              fontFamily: 'var(--font-playfair), Georgia, serif',
+              fontStyle: 'italic',
+              fontSize: 'clamp(15px, 2.2vw, 17px)',
+              lineHeight: 1.8,
+              whiteSpace: 'pre-line',
+            }}
+          >
+            &ldquo;Mãezinha, eu tentei reunir aqui um pouco do carinho que as pessoas sentem por você.{'\n\n'}Cada mensagem, cada foto e cada áudio foi deixado com amor, para que você pudesse sentir, de pertinho, o quanto é especial na vida de tanta gente.{'\n\n'}Fiz tudo com muito carinho, pensando em você.{'\n\n'}Te amo muito.&rdquo;
+          </p>
+        </div>
+
+        {/* Assinatura */}
+        <div
+          className="flex flex-col items-end gap-0.5 pt-1"
+          style={{ borderTop: '1px solid rgba(232,213,163,0.4)' }}
+        >
+          <p
+            className="text-sm"
+            style={{
+              fontFamily: 'var(--font-playfair), Georgia, serif',
+              fontStyle: 'italic',
+              color: '#8B7355',
+            }}
+          >
+            Com amor,
+          </p>
+          <p
+            className="text-xl font-bold text-text-dark"
+            style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
+          >
+            Evandro ❤️
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Gallery tile (mosaico) ─── */
+function GalleryTile({ photo, isFirst, index, onClick }: {
+  photo: GalleryPhoto
+  isFirst: boolean
+  index: number
+  onClick: () => void
+}) {
+  const [imgError, setImgError] = useState(false)
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.4) }}
+      onClick={onClick}
+      style={{
+        gridColumn: isFirst ? '1 / -1' : undefined,
+        aspectRatio: isFirst ? '4 / 3' : '1 / 1',
+        borderRadius: 16,
+        border: '1px solid rgba(201,168,76,0.24)',
+        boxShadow: '0 3px 14px -4px rgba(61,50,40,0.22)',
+        background: '#150d04',
+        display: 'block',
+        cursor: 'pointer',
+        outline: 'none',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+      className="active:scale-95 transition-transform"
+    >
+      {!imgError ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photo.url}
+          alt={`Foto de ${photo.nome}`}
+          loading="lazy"
+          decoding="async"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Camera size={22} color="rgba(201,168,76,0.35)" />
+        </div>
+      )}
+
+      {/* Etiqueta com nome */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '20px 10px 8px',
+          background: 'linear-gradient(to top, rgba(8,3,0,0.72) 0%, transparent 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+        }}
+      >
+        <Heart size={8} color="rgba(201,168,76,0.8)" fill="rgba(201,168,76,0.8)" style={{ flexShrink: 0 }} />
+        <span
+          style={{
+            fontSize: 11,
+            fontFamily: 'var(--font-playfair), Georgia, serif',
+            fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.82)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {photo.nome}
+        </span>
+      </div>
+    </motion.button>
+  )
+}
+
+/* ─── Gallery lightbox (separado do Lightbox dos cards) ─── */
+function GalleryLightbox({ photos, startIdx, onClose }: {
+  photos: GalleryPhoto[]
+  startIdx: number
+  onClose: () => void
+}) {
+  const [idx, setIdx] = useState(startIdx)
+  const touchStartX = useRef(0)
+
+  const prev = () => setIdx((i) => Math.max(0, i - 1))
+  const next = () => setIdx((i) => Math.min(photos.length - 1, i + 1))
+
+  // Trava o scroll do fundo enquanto o lightbox está aberto
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (delta > 55) next()
+    else if (delta < -55) prev()
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{ background: 'rgba(6,3,1,0.97)' }}
+    >
+      {/* Cabeçalho: etiqueta da pessoa + botão fechar */}
+      <div className="flex items-center justify-between px-4 py-4 shrink-0">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs"
+            style={{
+              background: 'rgba(201,168,76,0.15)',
+              border: '1px solid rgba(201,168,76,0.32)',
+              color: '#F0D88A',
+            }}
+          >
+            <Heart size={9} color="#C9A84C" fill="#C9A84C" />
+            <span>Foto de {photos[idx].nome}</span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>
+              {idx + 1}/{photos.length}
+            </span>
+          </motion.div>
+        </AnimatePresence>
+
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 rounded-full font-semibold text-sm active:scale-95 transition-transform"
+          style={{
+            background: 'rgba(255,255,255,0.14)',
+            border: '1.5px solid rgba(255,255,255,0.28)',
+            color: '#fff',
+            padding: '10px 18px',
+          }}
+        >
+          <X size={16} strokeWidth={2.5} />
+          <span>Fechar</span>
+        </button>
+      </div>
+
+      {/* Foto */}
+      <div
+        className="flex-1 flex items-center justify-center px-3 overflow-hidden min-h-0"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={onClose}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.img
+            key={idx}
+            src={photos[idx].url}
+            alt={`Foto de ${photos[idx].nome}`}
+            initial={{ opacity: 0, scale: 0.93 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.93 }}
+            transition={{ duration: 0.18 }}
+            className="rounded-2xl object-contain"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </AnimatePresence>
+      </div>
+
+      {/* Navegação — área de toque generosa */}
+      <div className="flex items-center justify-between px-4 py-5 shrink-0 gap-3">
+        <button
+          onClick={prev}
+          disabled={idx === 0}
+          className="flex items-center justify-center gap-2 rounded-2xl font-medium text-sm active:scale-95 transition-all disabled:opacity-25"
+          style={{
+            background: 'rgba(255,255,255,0.10)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            color: '#fff',
+            padding: '14px 0',
+            flex: 1,
+          }}
+        >
+          <ChevronLeft size={20} />
+          <span>Anterior</span>
+        </button>
+
+        <button
+          onClick={next}
+          disabled={idx === photos.length - 1}
+          className="flex items-center justify-center gap-2 rounded-2xl font-medium text-sm active:scale-95 transition-all disabled:opacity-25"
+          style={{
+            background: 'rgba(255,255,255,0.10)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            color: '#fff',
+            padding: '14px 0',
+            flex: 1,
+          }}
+        >
+          <span>Próxima</span>
+          <ChevronRight size={20} />
+        </button>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Galeria geral de fotos ─── */
+function PhotoGallery({ tributes }: { tributes: Tribute[] }) {
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
+
+  // Coleta e deduplica todas as fotos com o nome de quem enviou
+  const allPhotos: GalleryPhoto[] = []
+  const seen = new Set<string>()
+  for (const t of tributes) {
+    for (const url of t.fotos ?? []) {
+      if (url && !seen.has(url)) {
+        seen.add(url)
+        allPhotos.push({ url, nome: t.nome })
+      }
+    }
+  }
+
+  if (allPhotos.length === 0) return null
+
+  return (
+    <div className="w-full flex flex-col gap-6">
+      {/* Separador decorativo */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5))' }} />
+        <div className="flex items-center gap-1.5">
+          <Camera size={11} color="#C9A84C" />
+          <Heart size={14} color="#C9A84C" fill="#C9A84C" />
+          <Camera size={11} color="#C9A84C" />
+        </div>
+        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, rgba(201,168,76,0.5), transparent)' }} />
+      </div>
+
+      {/* Cabeçalho emocional */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col items-center gap-2 text-center px-2"
+      >
+        <div
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium tracking-widest uppercase"
+          style={{
+            background: 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(232,213,163,0.28) 100%)',
+            border: '1px solid rgba(201,168,76,0.32)',
+            color: '#A07830',
+          }}
+        >
+          <Camera size={10} color="#A07830" />
+          <span>Memórias em fotos</span>
+        </div>
+        <p className="text-text-muted text-sm leading-relaxed mt-1">
+          Alguns pedacinhos de carinho que ficaram guardados para você.
+        </p>
+        <p className="text-xs leading-relaxed px-2" style={{ color: 'rgba(139,115,85,0.65)' }}>
+          Depois de ler e ouvir tantas mensagens, aqui estão algumas lembranças em imagens.
+        </p>
+      </motion.div>
+
+      {/* Mosaico 2 colunas — primeira foto destaque */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.15 }}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 8,
+        }}
+      >
+        {allPhotos.map((photo, i) => (
+          <GalleryTile
+            key={photo.url}
+            photo={photo}
+            isFirst={i === 0}
+            index={i}
+            onClick={() => setLightboxIdx(i)}
+          />
+        ))}
+      </motion.div>
+
+      <p className="text-center text-xs" style={{ color: 'rgba(139,115,85,0.5)' }}>
+        👆 Toque em uma foto para ver maior
+      </p>
+
+      {/* Lightbox da galeria — estado separado do carrossel dos cards */}
+      <AnimatePresence>
+        {lightboxIdx !== null && (
+          <GalleryLightbox
+            photos={allPhotos}
+            startIdx={lightboxIdx}
+            onClose={() => setLightboxIdx(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 /* ─── Tela de erro de carregamento ─── */
 function LoadFailedScreen() {
   return (
@@ -1356,9 +1764,11 @@ export default function SuaHomenagem() {
                 </motion.div>
               ) : (
                 <div className="w-full flex flex-col gap-5">
+                  <EvandroCard />
                   {tributes.map((t, i) => (
                     <TributeCard key={t.id} tribute={t} index={i} />
                   ))}
+                  <PhotoGallery tributes={tributes} />
                   <ClosingSection
                     contacts={tributes
                       .filter((t) => t.telefone)
