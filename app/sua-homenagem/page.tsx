@@ -957,7 +957,7 @@ function EvandroCard() {
             }}
           >
             <Heart size={11} color="#C9A84C" fill="#C9A84C" />
-            <span>Uma mensagem do seu filho</span>
+            <span>Uma surpresa feita com amor</span>
             <Heart size={11} color="#C9A84C" fill="#C9A84C" />
           </div>
         </div>
@@ -988,7 +988,7 @@ function EvandroCard() {
               whiteSpace: 'pre-line',
             }}
           >
-            &ldquo;Mãezinha, eu tentei reunir aqui um pouco do carinho que as pessoas sentem por você.{'\n\n'}Cada mensagem, cada foto e cada áudio foi deixado com amor, para que você pudesse sentir, de pertinho, o quanto é especial na vida de tanta gente.{'\n\n'}Fiz tudo com muito carinho, pensando em você.{'\n\n'}Te amo muito.&rdquo;
+            &ldquo;Mãezinha, eu preparei esse cantinho com muito carinho para reunir algumas mensagens de pessoas especiais que gostam muito de você.{'\n\n'}O Rodrigo, o Rafael e a Raquel também me ajudaram a reunir cada recado, cada foto e cada voz, para que essa surpresa chegasse até você do jeito mais bonito possível.{'\n\n'}Cada mensagem que você vai ver aqui foi deixada com amor. Cada foto e cada áudio guarda um pedacinho do carinho que essas pessoas sentem por você.{'\n\n'}Espero que, ao passar por tudo isso, você se sinta abraçada, lembrada e muito amada.{'\n\n'}Te amamos muito.&rdquo;
           </p>
         </div>
 
@@ -1008,10 +1008,10 @@ function EvandroCard() {
             Com amor,
           </p>
           <p
-            className="text-xl font-bold text-text-dark"
+            className="text-lg font-bold text-text-dark"
             style={{ fontFamily: 'var(--font-playfair), Georgia, serif' }}
           >
-            Evandro ❤️
+            Evandro, Rodrigo, Rafael e Raquel ❤️
           </p>
         </div>
       </div>
