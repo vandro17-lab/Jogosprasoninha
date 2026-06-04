@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, Type } from 'lucide-react'
+import { Heart, Play, Pause, Music2, Camera, MessageSquare, Loader2, Gift, Video, Type, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 import DecoBackground from '@/components/DecoBackground'
 import FloralOrnament from '@/components/FloralOrnament'
 
@@ -82,7 +82,7 @@ function AudioPlayer({ src, nome }: { src: string; nome: string }) {
 }
 
 /* ─── Photo carousel ─── */
-function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string; onOpen: (url: string) => void }) {
+function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string; onOpen: (idx: number) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -103,7 +103,6 @@ function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string;
             {fotos.length === 1 ? 'Foto' : `${fotos.length} fotos`}
           </span>
         </div>
-        {/* Dots */}
         {fotos.length > 1 && (
           <div className="flex items-center gap-1">
             {fotos.map((_, i) => (
@@ -131,8 +130,8 @@ function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string;
         {fotos.map((url, i) => (
           <button
             key={i}
-            onClick={() => onOpen(url)}
-            className="shrink-0 snap-center overflow-hidden rounded-2xl active:scale-95 transition-transform"
+            onClick={() => onOpen(i)}
+            className="relative shrink-0 snap-center overflow-hidden rounded-2xl active:scale-95 transition-transform group"
             style={{
               width: fotos.length === 1 ? '100%' : 'calc(85%)',
               height: 220,
@@ -141,20 +140,255 @@ function PhotoCarousel({ fotos, nome, onOpen }: { fotos: string[]; nome: string;
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt={`Foto ${i + 1} de ${nome}`} className="w-full h-full object-cover" />
+            {/* Ampliar hint overlay */}
+            <div
+              className="absolute inset-0 flex items-end justify-end p-2.5 opacity-0 group-active:opacity-100 transition-opacity"
+              style={{ background: 'linear-gradient(to top-left, rgba(0,0,0,0.35) 0%, transparent 55%)' }}
+            >
+              <div
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-white"
+                style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', fontSize: 11 }}
+              >
+                <Maximize2 size={10} />
+                <span>Ampliar</span>
+              </div>
+            </div>
           </button>
         ))}
       </div>
 
-      {/* Instruction hint */}
+      {/* Hint */}
+      <p className="text-center text-xs mt-2.5" style={{ color: 'rgba(139,115,85,0.7)' }}>
+        {fotos.length > 1
+          ? '👆 Passe o dedo para ver mais · Toque para ampliar'
+          : '👆 Toque na foto para ampliar'}
+      </p>
+    </div>
+  )
+}
+
+/* ─── Lightbox ─── */
+function Lightbox({ fotos, startIdx, onClose }: { fotos: string[]; startIdx: number; onClose: () => void }) {
+  const [idx, setIdx] = useState(startIdx)
+  const touchStartX = useRef(0)
+
+  const prev = () => setIdx((i) => Math.max(0, i - 1))
+  const next = () => setIdx((i) => Math.min(fotos.length - 1, i + 1))
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (delta > 55) next()
+    else if (delta < -55) prev()
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{ background: 'rgba(8,4,2,0.97)' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 shrink-0">
+        {fotos.length > 1 ? (
+          <span className="text-white/55 text-sm font-medium">{idx + 1} de {fotos.length}</span>
+        ) : <span />}
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 rounded-full font-semibold text-sm active:scale-95 transition-transform"
+          style={{
+            background: 'rgba(255,255,255,0.14)',
+            border: '1.5px solid rgba(255,255,255,0.28)',
+            color: '#fff',
+            padding: '10px 18px',
+          }}
+        >
+          <X size={16} strokeWidth={2.5} />
+          <span>Fechar</span>
+        </button>
+      </div>
+
+      {/* Image */}
+      <div
+        className="flex-1 flex items-center justify-center px-4 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={onClose}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.img
+            key={idx}
+            src={fotos[idx]}
+            alt={`Foto ${idx + 1}`}
+            initial={{ opacity: 0, scale: 0.93 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.93 }}
+            transition={{ duration: 0.18 }}
+            className="rounded-2xl object-contain"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </AnimatePresence>
+      </div>
+
+      {/* Navigation */}
       {fotos.length > 1 && (
-        <p className="text-center text-xs mt-2" style={{ color: 'rgba(139,115,85,0.65)' }}>
-          Passe o dedo para o lado · Toque para ampliar
-        </p>
+        <div className="flex items-center justify-center gap-3 px-4 py-5 shrink-0">
+          <button
+            onClick={prev}
+            disabled={idx === 0}
+            className="flex items-center gap-1.5 rounded-2xl font-medium text-sm active:scale-95 transition-all disabled:opacity-25"
+            style={{
+              background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#fff',
+              padding: '12px 20px',
+            }}
+          >
+            <ChevronLeft size={18} />
+            Anterior
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {fotos.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                style={{
+                  width: i === idx ? 18 : 7,
+                  height: 7,
+                  borderRadius: 4,
+                  background: i === idx ? '#C9A84C' : 'rgba(255,255,255,0.28)',
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={next}
+            disabled={idx === fotos.length - 1}
+            className="flex items-center gap-1.5 rounded-2xl font-medium text-sm active:scale-95 transition-all disabled:opacity-25"
+            style={{
+              background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.18)',
+              color: '#fff',
+              padding: '12px 20px',
+            }}
+          >
+            Próxima
+            <ChevronRight size={18} />
+          </button>
+        </div>
       )}
+
+      {/* Single photo close hint */}
       {fotos.length === 1 && (
-        <p className="text-center text-xs mt-2" style={{ color: 'rgba(139,115,85,0.65)' }}>
-          Toque na imagem para ampliar
-        </p>
+        <p className="text-center text-white/35 text-xs pb-8">Toque fora da foto ou no botão Fechar para sair</p>
+      )}
+    </motion.div>
+  )
+}
+
+/* ─── Video player ─── */
+function VideoPlayer({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [hasStarted, setHasStarted] = useState(false)
+
+  function handlePlayClick() {
+    const v = videoRef.current
+    if (!v) return
+    setHasStarted(true)
+    v.play().catch(() => setHasStarted(false))
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div
+        className="relative w-full overflow-hidden"
+        style={{
+          borderRadius: 20,
+          border: '1px solid rgba(201,168,76,0.28)',
+          boxShadow: '0 2px 0 rgba(255,255,255,0.7) inset, 0 8px 28px rgba(61,50,40,0.16)',
+          background: '#0d0806',
+        }}
+      >
+        <video
+          ref={videoRef}
+          controls
+          playsInline
+          src={src}
+          style={{ width: '100%', display: 'block' }}
+          onPlay={() => setHasStarted(true)}
+        />
+
+        {/* Play overlay — desaparece após o primeiro toque */}
+        <AnimatePresence>
+          {!hasStarted && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 flex flex-col items-center justify-center"
+              style={{ background: 'rgba(8,4,2,0.55)', cursor: 'pointer' }}
+              onClick={handlePlayClick}
+            >
+              <motion.div
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                className="flex flex-col items-center gap-3"
+              >
+                {/* Glow */}
+                <div className="relative">
+                  <div
+                    className="absolute -inset-4 rounded-full animate-pulse opacity-50"
+                    style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.45), transparent 70%)' }}
+                  />
+                  <div
+                    className="relative w-20 h-20 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, #D9B95C 0%, #C9A84C 100%)',
+                      boxShadow: '0 8px 36px rgba(201,168,76,0.60)',
+                    }}
+                  >
+                    <Play size={34} fill="white" color="white" style={{ marginLeft: 4 }} />
+                  </div>
+                </div>
+                <span
+                  className="font-semibold text-white text-base rounded-full px-5 py-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+                    backdropFilter: 'blur(6px)',
+                  }}
+                >
+                  Toque para assistir
+                </span>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Dica de controles */}
+      {hasStarted && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-xs"
+          style={{ color: 'rgba(139,115,85,0.65)' }}
+        >
+          Use os controles abaixo do vídeo para pausar ou colocar em tela cheia
+        </motion.p>
       )}
     </div>
   )
@@ -267,7 +501,7 @@ function FontSizeControl({ idx, onChange }: { idx: number; onChange: (i: number)
 
 /* ─── Tribute card ─── */
 function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: number; textSize: number }) {
-  const [lightbox, setLightbox] = useState<string | null>(null)
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
   return (
     <>
@@ -325,7 +559,7 @@ function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: nu
 
           {/* Photos carousel */}
           {tribute.fotos.length > 0 && (
-            <PhotoCarousel fotos={tribute.fotos} nome={tribute.nome} onOpen={setLightbox} />
+            <PhotoCarousel fotos={tribute.fotos} nome={tribute.nome} onOpen={setLightboxIdx} />
           )}
 
           {/* Audio */}
@@ -350,23 +584,7 @@ function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: nu
               </div>
               <div className="flex flex-col gap-3">
                 {tribute.videos.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-full overflow-hidden"
-                    style={{
-                      borderRadius: 20,
-                      border: '1px solid rgba(201,168,76,0.28)',
-                      boxShadow: '0 2px 0 rgba(255,255,255,0.7) inset, 0 8px 28px rgba(61,50,40,0.16)',
-                      background: '#0d0806',
-                    }}
-                  >
-                    <video
-                      controls
-                      playsInline
-                      src={url}
-                      style={{ width: '100%', display: 'block' }}
-                    />
-                  </div>
+                  <VideoPlayer key={i} src={url} />
                 ))}
               </div>
             </div>
@@ -375,22 +593,12 @@ function TributeCard({ tribute, index, textSize }: { tribute: Tribute; index: nu
       </motion.div>
 
       <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4"
-            onClick={() => setLightbox(null)}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightbox}
-              alt="Foto ampliada"
-              className="max-w-full max-h-[90vh] rounded-2xl object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
+        {lightboxIdx !== null && (
+          <Lightbox
+            fotos={tribute.fotos}
+            startIdx={lightboxIdx}
+            onClose={() => setLightboxIdx(null)}
+          />
         )}
       </AnimatePresence>
     </>
